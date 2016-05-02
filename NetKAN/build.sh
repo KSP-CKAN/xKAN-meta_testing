@@ -345,4 +345,11 @@ do
     
     # Cleanup.
     mono ckan.exe ksp forget $KSP_NAME
+
+    # Check for Installations that have gone wrong.
+    gamedata=($(find dummy_ksp/GameData/. -name GameData -exec sh -c 'if test -d "{}"; then echo 1;fi' \;))
+    if [ ${#gamedata[@]} -gt 0 ]; then
+      echo "GameData directory found within GameData"  
+      exit 1;
+    fi
 done
