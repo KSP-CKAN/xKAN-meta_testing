@@ -46,11 +46,18 @@ foreach my $shortname (sort keys %files) {
         "$shortname license ($mod_license) should match spec. Set `x_netkan_license_ok` to supress."
     );
 
-    ok(
-        $metadata->{'$kref'} || $metadata->{'$vref'},
-        "$shortname has no \$kref/\$vref field. It belongs in CKAN-meta"
-    );
-        
+    if ( defined $metadata->{'download'} ) {
+      ok(
+          ! defined $metadata->{'$kref'} && ! defined $metadata->{'$vref'},
+          "$shortname has a \$kref/\$vref and a download field, this is likely incorrect."
+      );
+    } else {
+      ok(
+          $metadata->{'$kref'} || $metadata->{'$vref'},
+          "$shortname has no \$kref/\$vref field, this is required when no download url is specified."
+      );
+    }
+
     if (my $overrides = $metadata->{x_netkan_override}) {
 
         my $is_array = ref($overrides) eq "ARRAY";
@@ -138,8 +145,6 @@ sub compare_version {
 
   $spec_version =~ s/v1\.([2|4|6])$/v1.0$1/;
   $min_version =~ s/v1\.([2|4|6])$/v1.0$1/;
-
-  print "Spec: $spec_version, Min: $min_version\n";
 
   if ($spec_version ge $min_version) {
     return 1;
