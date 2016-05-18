@@ -10,6 +10,8 @@ KSP_NAME_DEFAULT="dummy"
 LATEST_CKAN_URL="http://ckan-travis.s3.amazonaws.com/ckan.exe"
 LATEST_NETKAN_URL="http://ckan-travis.s3.amazonaws.com/netkan.exe"
 LATEST_CKAN_META="https://github.com/KSP-CKAN/CKAN-meta/archive/master.tar.gz"
+LATEST_CKAN_VALIDATE="https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/bin/ckan-validate.py"
+LATEST_CKAN_SCHEMA="https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/CKAN.schema"
 
 # Third party utilities.
 JQ_PATH="jq"
@@ -265,6 +267,11 @@ echo "Fetching latest netkan.exe"
 wget --quiet $LATEST_NETKAN_URL -O netkan.exe
 mono netkan.exe --version
 
+# CKAN Validation files
+wget --quiet $LATEST_CKAN_VALIDATE -O ckan-validate.py
+wget --quiet $LATEST_CKAN_SCHEMA -O CKAN.schema
+chmod a+x ckan-validate.py
+
 # Fetch the latest metadata.
 echo "Fetching latest metadata"
 wget --quiet $LATEST_CKAN_META -O metadata.tar.gz
@@ -300,6 +307,7 @@ do
     fi
 
     echo "Checking $ckan"
+    ./ckan-validate.py $ckan
     echo "----------------------------------------------"
     echo ""
     cat $ckan | python -m json.tool
