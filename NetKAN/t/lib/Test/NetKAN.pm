@@ -88,6 +88,7 @@ sub licenses {
         "QPL-1.0",
         "W3C",
         "WTFPL",
+        "Unlicense",
         "Zlib",
         "Zope",
         "open-source", "restricted", "unrestricted", "unknown"

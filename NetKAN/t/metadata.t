@@ -90,6 +90,20 @@ foreach my $shortname (sort keys %files) {
         "spec version must be 1 or in the 'vX.X' format"
     );
 
+    if ($mod_license eq "WTFPL") {
+        ok(
+            compare_version($spec_version,"v1.2"),
+            "$shortname - spec_version v1.2+ required for license 'WTFPL'"
+        );
+    }
+
+    if ($mod_license eq "Unlicense") {
+        ok(
+            compare_version($spec_version,"v1.18"),
+            "$shortname - spec_version v1.18+ required for license 'Unlicense'"
+        );
+    }
+
     if ($metadata->{ksp_version_strict}) {
         ok(
             compare_version($spec_version,"v1.16"),
