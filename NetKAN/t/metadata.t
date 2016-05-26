@@ -48,7 +48,7 @@ foreach my $shortname (sort keys %files) {
 
     if ( defined $metadata->{'download'} ) {
       ok(
-          ! defined $metadata->{'$kref'} && ! defined $metadata->{'$vref'},
+          ! defined $metadata->{'$kref'},
           "$shortname has a \$kref/\$vref and a download field, this is likely incorrect."
       );
       ok(
