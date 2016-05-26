@@ -40,11 +40,14 @@ foreach my $shortname (sort keys %files) {
     }
 
     my $mod_license = $metadata->{license} // "(none)";
+    my $kref = $metadata->{'$kref'} // "(none)";
 
-    ok(
-        $metadata->{x_netkan_license_ok} || $licenses{$mod_license},
-        "$shortname license ($mod_license) should match spec. Set `x_netkan_license_ok` to supress."
-    );
+    if ( $kref !~ /^\#\/ckan\/netkan/ ) {
+      ok(
+          $metadata->{x_netkan_license_ok} || $licenses{$mod_license},
+          "$shortname license ($mod_license) should match spec. Set `x_netkan_license_ok` to supress."
+      );
+    }
 
     if ( defined $metadata->{'download'} ) {
       ok(
