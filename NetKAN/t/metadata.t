@@ -40,15 +40,18 @@ foreach my $shortname (sort keys %files) {
     }
 
     my $mod_license = $metadata->{license} // "(none)";
+    my $kref = $metadata->{'$kref'} // "(none)";
 
-    ok(
-        $metadata->{x_netkan_license_ok} || $licenses{$mod_license},
-        "$shortname license ($mod_license) should match spec. Set `x_netkan_license_ok` to supress."
-    );
+    if ( $kref !~ /^\#\/ckan\/netkan/ ) {
+      ok(
+          $metadata->{x_netkan_license_ok} || $licenses{$mod_license},
+          "$shortname license ($mod_license) should match spec. Set `x_netkan_license_ok` to supress."
+      );
+    }
 
     if ( defined $metadata->{'download'} ) {
       ok(
-          ! defined $metadata->{'$kref'} && ! defined $metadata->{'$vref'},
+          ! defined $metadata->{'$kref'},
           "$shortname has a \$kref/\$vref and a download field, this is likely incorrect."
       );
       ok(
@@ -89,6 +92,20 @@ foreach my $shortname (sort keys %files) {
         $spec_version =~ m/^1$|^v\d\.\d\d?$/, 
         "spec version must be 1 or in the 'vX.X' format"
     );
+
+    if ($mod_license eq "WTFPL") {
+        ok(
+            compare_version($spec_version,"v1.2"),
+            "$shortname - spec_version v1.2+ required for license 'WTFPL'"
+        );
+    }
+
+    if ($mod_license eq "Unlicense") {
+        ok(
+            compare_version($spec_version,"v1.18"),
+            "$shortname - spec_version v1.18+ required for license 'Unlicense'"
+        );
+    }
 
     if ($metadata->{ksp_version_strict}) {
         ok(
