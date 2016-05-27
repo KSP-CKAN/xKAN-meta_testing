@@ -306,6 +306,14 @@ do
         continue
     fi
     
+    basename=$(basename "$f" .netkan)
+    frozen_files=( "NetKAN/$basename.frozen"* )
+
+    if [ ${#frozen_files[@]} -gt 0 ]; then
+        echo "'$basename' matches an existing frozen identifier: ${frozen_files[@]}"
+        exit $EXIT_FAILED_DUPLICATE_IDENTIFIERS
+    fi
+
     echo "Running NetKAN for $f"
     mono netkan.exe $f --cachedir="downloads_cache" --outputdir="built" $NETKAN_OPTIONS
 done
