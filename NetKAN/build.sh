@@ -2,6 +2,9 @@
 
 set -e
 
+# We want our globs to be null
+shopt -s nullglob
+
 # Default flags.
 KSP_VERSION_DEFAULT="1.1.2"
 KSP_NAME_DEFAULT="dummy"
@@ -20,6 +23,8 @@ JQ_PATH="jq"
 EXIT_OK=0
 EXIT_FAILED_PROVE_STEP=1
 EXIT_FAILED_JSON_VALIDATION=2
+EXIT_FAILED_ROOT_NETKANS=3
+EXIT_FAILED_DUPLICATE_IDENTIFIERS=4
 
 # Allow us to specify a commit id as the first argument
 if [ -n "$1" ]
@@ -210,6 +215,14 @@ then
     rm -f metadata.tar.gz
 fi
 
+# Check our new NetKAN is not in the root of our repo
+root_netkans=( *.netkan )
+
+if [ ${#root_netkans[@]} -gt 0 ]; then
+    echo NetKAN file found in root of repository, please move it into NetKAN/
+    exit $EXIT_FAILED_ROOT_NETKANS
+fi
+
 # Check JSON.
 echo "Running jsonlint on the changed files"
 echo "If you get an error below you should look for syntax errors in the metadata"
@@ -292,7 +305,7 @@ do
         echo "Lets try not to build '$f' with netkan"
         continue
     fi
-
+    
     echo "Running NetKAN for $f"
     mono netkan.exe $f --cachedir="downloads_cache" --outputdir="built" $NETKAN_OPTIONS
 done
