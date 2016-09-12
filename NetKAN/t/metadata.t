@@ -20,13 +20,13 @@ foreach my $shortname (sort keys %files) {
     is(
         $metadata->{identifier},
         $shortname,
-        "$shortname.netkan identifer should match filename"
+        "$shortname.netkan identifier should match filename"
     );
 
     like(
         $metadata->{identifier},
         $ident_qr,
-        "$shortname: CKAN identifers must consist only of letters, numbers, and dashes, and must start with a letter."
+        "$shortname: CKAN identifiers must consist only of letters, numbers, and dashes, and must start with a letter or number."
     );
 
     foreach my $relation (qw(depends recommends suggests conflicts)) {
@@ -154,6 +154,13 @@ foreach my $shortname (sort keys %files) {
             ok(
                 compare_version($spec_version,"v1.16"),
                 "$shortname - spec_version v1.16+ required for 'find_matches_files'"
+            );
+        }
+
+        if ($install->{as}) {
+            ok(
+                compare_version($spec_version,"v1.18"),
+                "$shortname - spec_version v1.18+ required for 'as'"
             );
         }
     }
