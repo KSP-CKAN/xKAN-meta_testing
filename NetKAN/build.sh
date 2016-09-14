@@ -6,7 +6,7 @@ set -e
 shopt -s nullglob
 
 # Default flags.
-KSP_VERSION_DEFAULT="1.1.3"
+KSP_VERSION_DEFAULT="1.2.0"
 KSP_NAME_DEFAULT="dummy"
 
 # Locations of CKAN and NetKAN.
@@ -71,11 +71,19 @@ create_dummy_ksp () {
         KSP_VERSION="1.0.5"
         ;;
     "1.1")
-        echo "Overriding '1.1' with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
+        echo "Overriding '1.1' with '1.1.3'"
+        KSP_VERSION="1.1.3"
         ;;
     "1.1.99")
-        echo "Overriding '1.1.99' with '$KSP_VERSION_DEFAULT'"
+        echo "Overriding '1.1.99' with '1.1.3'"
+        KSP_VERSION="1.1.3"
+        ;;
+    "1.2")
+        echo "Overriding '1.2' with '$KSP_VERSION_DEFAULT'"
+        KSP_VERSION=$KSP_VERSION_DEFAULT
+        ;;
+    "1.2.99")
+        echo "Overriding '1.2.99' with '$KSP_VERSION_DEFAULT'"
         KSP_VERSION=$KSP_VERSION_DEFAULT
         ;;
     "1.99.99")
