@@ -55,7 +55,7 @@ if ($tests_ran == 0) {
 done_testing;
 
 # Returns true if this is a file we want to test.
-# We test both KS and github releases for now.
+# We test SD, github, jenkins and curse releases.
 sub is_testable_file {
     my ($file) = @_;
 
@@ -68,7 +68,7 @@ sub is_testable_file {
     my $content = <$fh>;
     close($fh);
 
-    return $content =~ m{#/ckan/(?:kerbalstuff|github)};
+    return $content =~ m{#/ckan/(?:spacedock|github|jenkins|curse)};
 }
 
 # Simply checks to see if netkan.exe runs without errors on this file
