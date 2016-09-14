@@ -23,6 +23,7 @@ if (! -x $netkan) {
     my $agent = WWW::Mechanize->new( agent => "NetKAN travis testing" );
     $agent->get("https://github.com/KSP-CKAN/CKAN/releases");
     $agent->follow_link(text => 'netkan.exe');
+    #$agent->get('http://ckan-travis.s3.amazonaws.com/netkan.exe');
 
     open(my $fh, '>', $netkan);
     binmode($fh);
