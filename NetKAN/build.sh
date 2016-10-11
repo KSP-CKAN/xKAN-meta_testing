@@ -86,14 +86,6 @@ create_dummy_ksp () {
         echo "Overriding '1.2.99' with '$KSP_VERSION_DEFAULT'"
         KSP_VERSION=$KSP_VERSION_DEFAULT
         ;;
-    "1.2")
-        echo "Overriding '1.2' with '1.2.0'"
-        KSP_VERSION="1.2.0"
-        ;;
-    "1.2.99")
-        echo "Overriding '1.2.99' with '1.2.0'"
-        KSP_VERSION="1.2.0"
-        ;;
     "1.99.99")
         echo "Overriding '1.99.99' with '$KSP_VERSION_DEFAULT'"
         KSP_VERSION=$KSP_VERSION_DEFAULT
