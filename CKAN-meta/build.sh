@@ -2,7 +2,7 @@
 set -e
 
 # Default flags.
-KSP_VERSION_DEFAULT="1.2.1"
+KSP_VERSION_DEFAULT="1.2.2"
 KSP_NAME_DEFAULT="dummy"
 
 # Locations of CKAN and validation.
