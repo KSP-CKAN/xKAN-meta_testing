@@ -2,7 +2,7 @@
 set -e
 
 # Default flags.
-KSP_VERSION_DEFAULT="1.2.2"
+KSP_VERSION_DEFAULT="1.2.9"
 KSP_NAME_DEFAULT="dummy"
 
 # Locations of CKAN and validation.
@@ -79,6 +79,10 @@ create_dummy_ksp () {
         ;;
     "1.99.99")
         echo "Overriding '1.99.99' with '$KSP_VERSION_DEFAULT'"
+        KSP_VERSION=$KSP_VERSION_DEFAULT
+        ;;
+    "9.99.999")
+        echo "Overriding '9.99.999' with '$KSP_VERSION_DEFAULT'"
         KSP_VERSION=$KSP_VERSION_DEFAULT
         ;;
     "any")
