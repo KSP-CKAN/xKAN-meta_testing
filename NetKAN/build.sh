@@ -6,7 +6,7 @@ set -e
 shopt -s nullglob
 
 # Default flags.
-KSP_VERSION_DEFAULT="1.3.0"
+KSP_VERSION_DEFAULT="1.3.1"
 KSP_NAME_DEFAULT="dummy"
 
 # Locations of CKAN and NetKAN.
