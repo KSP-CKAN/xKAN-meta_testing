@@ -43,10 +43,19 @@ foreach my $shortname (sort keys %files) {
     my $kref = $metadata->{'$kref'} // "(none)";
 
     if ( $kref !~ /^\#\/ckan\/netkan/ ) {
-      ok(
-          $metadata->{x_netkan_license_ok} || $licenses{$mod_license},
-          "$shortname license ($mod_license) should match spec. Set `x_netkan_license_ok` to supress."
-      );
+        if (ref($mod_license) eq "ARRAY") {
+            foreach my $lic (@{$mod_license}) {
+                ok(
+                    $metadata->{x_netkan_license_ok} || $licenses{$lic},
+                    "$shortname license ($lic) should match spec. Set `x_netkan_license_ok` to supress."
+                );
+            }
+        } else {
+            ok(
+                $metadata->{x_netkan_license_ok} || $licenses{$mod_license},
+                "$shortname license ($mod_license) should match spec. Set `x_netkan_license_ok` to supress."
+            );
+        }
     }
 
     if ( defined $metadata->{'download'} ) {
@@ -89,7 +98,7 @@ foreach my $shortname (sort keys %files) {
 
     my $spec_version = $metadata->{spec_version};
     ok(
-        $spec_version =~ m/^1$|^v\d\.\d\d?$/, 
+        $spec_version =~ m/^1$|^v\d\.\d\d?$/,
         "spec version must be 1 or in the 'vX.X' format"
     );
 
@@ -166,7 +175,7 @@ foreach my $shortname (sort keys %files) {
     }
 }
 
-# 1.10 is < 1.2 our number comparisons don't work now :( 
+# 1.10 is < 1.2 our number comparisons don't work now :(
 # TODO: Do something better than this quick hack
 sub compare_version {
   my ($spec_version, $min_version) = @_;
