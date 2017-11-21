@@ -5,6 +5,7 @@ use autodie;
 use strict;
 use Test::Most;
 use Test::NetKAN qw(netkan_files read_netkan licenses);
+use Perl::Version;
 
 use Data::Dumper;
 
@@ -175,19 +176,9 @@ foreach my $shortname (sort keys %files) {
     }
 }
 
-# 1.10 is < 1.2 our number comparisons don't work now :(
-# TODO: Do something better than this quick hack
 sub compare_version {
   my ($spec_version, $min_version) = @_;
-
-  $spec_version =~ s/v1\.([2|4|6])$/v1.0$1/;
-  $min_version =~ s/v1\.([2|4|6])$/v1.0$1/;
-
-  if ($spec_version ge $min_version) {
-    return 1;
-  } else {
-    return 0;
-  }
+  return Perl::Version->new($spec_version) >= Perl::Version->new($min_version);
 }
 
 done_testing;
