@@ -32,7 +32,7 @@ then
     echo "Using CLI argument of $1"
     ghprbActualCommit=$1
 fi
-    
+
 # ------------------------------------------------
 # Function for creating dummy KSP directories to
 # test on. Takes version as an argument.
@@ -40,14 +40,14 @@ fi
 create_dummy_ksp () {
     KSP_VERSION=$KSP_VERSION_DEFAULT
     KSP_NAME=$KSP_NAME_DEFAULT
-    
+
     # Set the version to the requested KSP version if supplied.
     if [ $# -eq 2 ]
     then
         KSP_VERSION=$1
         KSP_NAME=$2
     fi
-    
+
     # TODO: Manual hack, a better way to handle this kind of identifiers may be needed.
     case $KSP_VERSION in
     "0.23")
@@ -126,16 +126,16 @@ create_dummy_ksp () {
         echo "No override, Running with '$KSP_VERSION'"
         ;;
     esac
-    
-    
+
+
     echo "Creating a dummy KSP '$KSP_VERSION' install"
-    
+
     # Remove any existing KSP dummy install.
     if [ -d "dummy_ksp/" ]
     then
         rm -rf dummy_ksp
     fi
-    
+
     # Create a new dummy KSP.
     mkdir dummy_ksp
     mkdir dummy_ksp/CKAN
@@ -146,12 +146,12 @@ create_dummy_ksp () {
     mkdir dummy_ksp/Ships/@thumbs
     mkdir dummy_ksp/Ships/@thumbs/VAB
     mkdir dummy_ksp/Ships/@thumbs/SPH
-    
+
     echo "Version $KSP_VERSION" > dummy_ksp/readme.txt
-    
+
     # Copy in resources.
     cp ckan.exe dummy_ksp/ckan.exe
-    
+
     # Reset the Mono registry.
     if [ "$USER" = "jenkins" ]
     then
@@ -161,17 +161,17 @@ create_dummy_ksp () {
             rm -f $REGISTRY_FILE
         fi
     fi
-    
+
     # Register the new dummy install.
     mono ckan.exe ksp add $KSP_NAME "`pwd`/dummy_ksp"
-    
+
     # Set the instance to default.
     mono ckan.exe ksp default $KSP_NAME
-    
+
     # Point to the local metadata instead of GitHub.
     mono ckan.exe repo add local "file://`pwd`/master.tar.gz"
     mono ckan.exe repo remove default
-    
+
     # Link to the downloads cache.
     ln -s ../../downloads_cache/ dummy_ksp/CKAN/downloads/
 }
@@ -192,13 +192,13 @@ inject_metadata () {
         cp metadata.tar.gz master.tar.gz
         return 0
     fi
-    
+
     echo "Injecting into metadata."
-    
+
     # Extract the metadata into a new folder.
     rm -rf CKAN-meta-master
     tar -xzf metadata.tar.gz
-    
+
     # Copy in the files to inject.
     # TODO: Unsure why this suddenly needs [*] declaration
     # but it does work
@@ -207,7 +207,7 @@ inject_metadata () {
         echo "Injecting: $f"
         cp $f CKAN-meta-master
     done
-    
+
     # Recompress the archive.
     rm -f master.tar.gz
     tar -czf master.tar.gz CKAN-meta-master
@@ -269,7 +269,7 @@ do
 
     echo "Validating $f..."
     jsonlint -s -v $f
-    
+
     if [ $? -ne 0 ]
     then
         echo "Failed to validate $f"
@@ -333,21 +333,22 @@ fi
 # Note: Additional NETKAN_OPTIONS may be set on jenkins jobs
 for f in $COMMIT_CHANGES
 do
-    if [[ "$f" =~ .frozen$ ]];then
-        echo "Lets try not to build '$f' with netkan"
-        continue
-    fi
-    
-    basename=$(basename "$f" .netkan)
-    frozen_files=( "NetKAN/$basename.frozen"* )
+    if [[ "$f" =~ \.netkan$ ]]
+    then
+        basename=$(basename "$f" .netkan)
+        frozen_files=( "NetKAN/$basename.frozen"* )
 
-    if [ ${#frozen_files[@]} -gt 0 ]; then
-        echo "'$basename' matches an existing frozen identifier: ${frozen_files[@]}"
-        exit $EXIT_FAILED_DUPLICATE_IDENTIFIERS
-    fi
+        if [ ${#frozen_files[@]} -gt 0 ]
+        then
+            echo "'$basename' matches an existing frozen identifier: ${frozen_files[@]}"
+            exit $EXIT_FAILED_DUPLICATE_IDENTIFIERS
+        fi
 
-    echo "Running NetKAN for $f"
-    mono netkan.exe $f --cachedir="downloads_cache" --outputdir="built" $NETKAN_OPTIONS
+        echo "Running NetKAN for $f"
+        mono netkan.exe $f --cachedir="downloads_cache" --outputdir="built" $NETKAN_OPTIONS
+    else
+        echo "Let's try not to build '$f' with netkan"
+    fi
 done
 
 # Test all the built files.
@@ -366,51 +367,51 @@ do
     cat $ckan | python -m json.tool
     echo "----------------------------------------------"
     echo ""
-    
+
     # Get a list of all the OTHER files.
     OTHER_FILES=()
-    
+
     for o in built/*.ckan
     do
         OTHER_FILES+=($o)
     done
-    
+
     # Inject into metadata.
     inject_metadata $OTHER_FILES
-    
+
     # Extract identifier and KSP version.
     CURRENT_IDENTIFIER=$($JQ_PATH '.identifier' $ckan)
     CURRENT_KSP_VERSION=$($JQ_PATH 'if .ksp_version then .ksp_version else .ksp_version_max end' $ckan)
-    
+
     # Strip "'s.
     CURRENT_IDENTIFIER=${CURRENT_IDENTIFIER//'"'}
     CURRENT_KSP_VERSION=${CURRENT_KSP_VERSION//'"'}
-    
+
     echo "Extracted $CURRENT_IDENTIFIER as identifier."
     echo "Extracted $CURRENT_KSP_VERSION as KSP version."
-    
+
     # Create a dummy KSP install.
     create_dummy_ksp $CURRENT_KSP_VERSION $KSP_NAME
-    
+
     echo "Running ckan update"
     mono ckan.exe update
-    
+
     echo "Running ckan install -c $ckan"
     mono ckan.exe install -c $ckan --headless
-    
+
     # Print list of installed mods.
     mono ckan.exe list --porcelain
-    
+
     # Check the installed files for this .ckan file.
     mono ckan.exe show $CURRENT_IDENTIFIER
-    
+
     # Cleanup.
     mono ckan.exe ksp forget $KSP_NAME
 
     # Check for Installations that have gone wrong.
     gamedata=($(find dummy_ksp/GameData/. -name GameData -exec sh -c 'if test -d "{}"; then echo "{}";fi' \;))
     if [ ${#gamedata[@]} -gt 0 ]; then
-      echo "GameData directory found within GameData"  
+      echo "GameData directory found within GameData"
       printf '%s\n' "Path: ${gamedata[@]}"
       exit 1;
     fi
