@@ -133,24 +133,30 @@ create_dummy_ksp () {
     # Remove any existing KSP dummy install.
     if [ -d "dummy_ksp/" ]
     then
-        rm -rf dummy_ksp
+        rm -rf --verbose dummy_ksp
     fi
 
     # Create a new dummy KSP.
-    mkdir dummy_ksp
-    mkdir dummy_ksp/CKAN
-    mkdir dummy_ksp/GameData
-    mkdir dummy_ksp/Ships/
-    mkdir dummy_ksp/Ships/VAB
-    mkdir dummy_ksp/Ships/SPH
-    mkdir dummy_ksp/Ships/@thumbs
-    mkdir dummy_ksp/Ships/@thumbs/VAB
-    mkdir dummy_ksp/Ships/@thumbs/SPH
+    mkdir -p --verbose \
+        dummy_ksp \
+        dummy_ksp/CKAN \
+        dummy_ksp/GameData \
+        dummy_ksp/Ships/ \
+        dummy_ksp/Ships/VAB \
+        dummy_ksp/Ships/SPH \
+        dummy_ksp/Ships/@thumbs \
+        dummy_ksp/Ships/@thumbs/VAB \
+        dummy_ksp/Ships/@thumbs/SPH
+
+    # Link to the downloads cache.
+    # NOTE: If this isn't done before ckan.exe uses the instance,
+    #       it will be auto-created as a plain directory!
+    ln -s --verbose ../../downloads_cache/ dummy_ksp/CKAN/downloads/
 
     echo "Version $KSP_VERSION" > dummy_ksp/readme.txt
 
     # Copy in resources.
-    cp ckan.exe dummy_ksp/ckan.exe
+    cp --verbose ckan.exe dummy_ksp/ckan.exe
 
     # Reset the Mono registry.
     if [ "$USER" = "jenkins" ]
@@ -158,7 +164,7 @@ create_dummy_ksp () {
         REGISTRY_FILE=$HOME/.mono/registry/CurrentUser/software/ckan/values.xml
         if [ -r $REGISTRY_FILE ]
         then
-            rm -f $REGISTRY_FILE
+            rm -f --verbose $REGISTRY_FILE
         fi
     fi
 
@@ -171,9 +177,6 @@ create_dummy_ksp () {
     # Point to the local metadata instead of GitHub.
     mono ckan.exe repo add local "file://`pwd`/master.tar.gz"
     mono ckan.exe repo remove default
-
-    # Link to the downloads cache.
-    ln -s ../../downloads_cache/ dummy_ksp/CKAN/downloads/
 }
 
 # ------------------------------------------------
@@ -189,14 +192,14 @@ inject_metadata () {
     if [ $# -ne 1 ]
     then
         echo "Nothing to inject."
-        cp metadata.tar.gz master.tar.gz
+        cp --verbose metadata.tar.gz master.tar.gz
         return 0
     fi
 
     echo "Injecting into metadata."
 
     # Extract the metadata into a new folder.
-    rm -rf CKAN-meta-master
+    rm -rf --verbose CKAN-meta-master
     tar -xzf metadata.tar.gz
 
     # Copy in the files to inject.
@@ -205,11 +208,13 @@ inject_metadata () {
     for f in ${OTHER_FILES[*]}
     do
         echo "Injecting: $f"
-        cp $f CKAN-meta-master
+        DEST="CKAN-meta-master/$f"
+        mkdir -p --verbose $(dirname "$DEST")
+        cp --verbose $f "$DEST"
     done
 
     # Recompress the archive.
-    rm -f master.tar.gz
+    rm -f --verbose master.tar.gz
     tar -czf master.tar.gz CKAN-meta-master
 }
 
@@ -229,22 +234,22 @@ fi
 # Make sure we start from a clean slate.
 if [ -d "built/" ]
 then
-    rm -rf built
+    rm -rf --verbose built
 fi
 
 if [ -d "downloads_cache/" ]
 then
-    rm -rf downloads_cache
+    rm -rf --verbose downloads_cache
 fi
 
 if [ -e "master.tar.gz" ]
 then
-    rm -f master.tar.gz
+    rm -f --verbose master.tar.gz
 fi
 
 if [ -e "metadata.tar.gz" ]
 then
-    rm -f metadata.tar.gz
+    rm -f --verbose metadata.tar.gz
 fi
 
 # Check our new NetKAN is not in the root of our repo
@@ -300,8 +305,9 @@ done
 echo ""
 
 # Create folders.
-mkdir built
-mkdir downloads_cache # TODO: Point to cache folder here instead if possible.
+mkdir --verbose built
+# Point to cache folder here
+mkdir --verbose downloads_cache
 
 # Fetch latest ckan and netkan executable.
 echo "Fetching latest ckan.exe"
@@ -315,7 +321,7 @@ mono netkan.exe --version
 # CKAN Validation files
 wget --quiet $LATEST_CKAN_VALIDATE -O ckan-validate.py
 wget --quiet $LATEST_CKAN_SCHEMA -O CKAN.schema
-chmod a+x ckan-validate.py
+chmod a+x --verbose ckan-validate.py
 
 # Fetch the latest metadata.
 echo "Fetching latest metadata"
@@ -415,4 +421,7 @@ do
       printf '%s\n' "Path: ${gamedata[@]}"
       exit 1;
     fi
+
+    # Blank line between files
+    echo
 done
