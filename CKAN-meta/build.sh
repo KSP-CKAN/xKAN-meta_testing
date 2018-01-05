@@ -123,7 +123,7 @@ create_dummy_ksp () {
     # Remove any existing KSP dummy install.
     if [ -d "dummy_ksp/" ]
     then
-        rm -rf --verbose dummy_ksp
+        rm -rf dummy_ksp
     fi
 
     # Create a new dummy KSP.
@@ -141,7 +141,7 @@ create_dummy_ksp () {
     # Link to the shared downloads cache.
     # NOTE: If this isn't done before ckan.exe uses the instance,
     #       it will be auto-created as a plain directory!
-    ln -s --verbose ../../downloads_cache/ dummy_ksp/CKAN/downloads/
+    ln -s --verbose ../../downloads_cache/ dummy_ksp/CKAN/downloads
 
     echo "Version $KSP_VERSION" > dummy_ksp/readme.txt
 
@@ -187,7 +187,7 @@ inject_metadata () {
     fi
 
     # Extract the metadata into a new folder.
-    rm -rf --verbose CKAN-meta-master
+    rm -rf CKAN-meta-master
     tar -xzf metadata.tar.gz
 
     # Copy in the files to inject.
