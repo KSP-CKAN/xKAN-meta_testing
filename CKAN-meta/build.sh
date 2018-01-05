@@ -23,7 +23,7 @@ then
     echo "Using CLI argument of $1"
     ghprbActualCommit=$1
 fi
-    
+
 # ------------------------------------------------
 # Function for creating dummy KSP directories to
 # test on. Takes version as an argument.
@@ -31,14 +31,14 @@ fi
 create_dummy_ksp () {
     KSP_VERSION=$KSP_VERSION_DEFAULT
     KSP_NAME=$KSP_NAME_DEFAULT
-    
+
     # Set the version to the requested KSP version if supplied.
     if [ $# -eq 2 ]
     then
         KSP_VERSION=$1
         KSP_NAME=$2
     fi
-    
+
     # TODO: Manual hack, a better way to handle this kind of identifiers may be needed.
     case $KSP_VERSION in
     "0.23")
@@ -119,51 +119,54 @@ create_dummy_ksp () {
     esac
 
     echo "Creating a dummy KSP '$KSP_VERSION' install"
-    
+
     # Remove any existing KSP dummy install.
     if [ -d "dummy_ksp/" ]
     then
-        rm -rf dummy_ksp
+        rm -rf --verbose dummy_ksp
     fi
-    
+
     # Create a new dummy KSP.
-    mkdir dummy_ksp
-    mkdir dummy_ksp/CKAN
-    mkdir dummy_ksp/GameData
-    mkdir dummy_ksp/Ships/
-    mkdir dummy_ksp/Ships/VAB
-    mkdir dummy_ksp/Ships/SPH
-    mkdir dummy_ksp/Ships/@thumbs
-    mkdir dummy_ksp/Ships/@thumbs/VAB
-    mkdir dummy_ksp/Ships/@thumbs/SPH
-    
+    mkdir -p --verbose \
+        dummy_ksp \
+        dummy_ksp/CKAN \
+        dummy_ksp/GameData \
+        dummy_ksp/Ships/ \
+        dummy_ksp/Ships/VAB \
+        dummy_ksp/Ships/SPH \
+        dummy_ksp/Ships/@thumbs \
+        dummy_ksp/Ships/@thumbs/VAB \
+        dummy_ksp/Ships/@thumbs/SPH
+
+    # Link to the shared downloads cache.
+    # NOTE: If this isn't done before ckan.exe uses the instance,
+    #       it will be auto-created as a plain directory!
+    ln -s --verbose ../../downloads_cache/ dummy_ksp/CKAN/downloads/
+
     echo "Version $KSP_VERSION" > dummy_ksp/readme.txt
-    
+
     # Copy in resources.
-    cp ckan.exe dummy_ksp/ckan.exe
-    
+    cp --verbose ckan.exe dummy_ksp/ckan.exe
+
     # Reset the Mono registry.
     if [ "$USER" = "jenkins" ]
     then
         REGISTRY_FILE=$HOME/.mono/registry/CurrentUser/software/ckan/values.xml
         if [ -r $REGISTRY_FILE ]
         then
-            rm -f $REGISTRY_FILE
+            rm -f --verbose $REGISTRY_FILE
         fi
     fi
-    
+
     # Register the new dummy install.
     mono ckan.exe ksp add $KSP_NAME "`pwd`/dummy_ksp"
-    
+
     # Set the instance to default.
     mono ckan.exe ksp default $KSP_NAME
-    
+
     # Point to the local metadata instead of GitHub.
     mono ckan.exe repo add local "file://`pwd`/master.tar.gz"
     mono ckan.exe repo remove default
-    
-    # Link to the downloads cache.
-    ln -s ../../downloads_cache/ dummy_ksp/CKAN/downloads/
 }
 
 # ------------------------------------------------
@@ -179,25 +182,27 @@ inject_metadata () {
     if [ $# -ne 1 ]
     then
         echo "Nothing to inject."
-        cp metadata.tar.gz master.tar.gz
+        cp --verbose metadata.tar.gz master.tar.gz
         return 0
     fi
-   
+
     # Extract the metadata into a new folder.
-    rm -rf CKAN-meta-master
+    rm -rf --verbose CKAN-meta-master
     tar -xzf metadata.tar.gz
-    
+
     # Copy in the files to inject.
     # TODO: Unsure why this suddenly needs [*] declaration
     # but it does work
     for f in ${OTHER_FILES[*]}
     do
         echo "Injecting $f"
-        cp $f CKAN-meta-master
+        DEST="CKAN-meta-master/$f"
+        mkdir -p --verbose $(dirname "$DEST")
+        cp --verbose $f "$DEST"
     done
-    
+
     # Recompress the archive.
-    rm -f master.tar.gz
+    rm -f --verbose master.tar.gz
     tar -czf master.tar.gz CKAN-meta-master
 }
 
@@ -220,23 +225,23 @@ fi
 # Make sure we start from a clean slate.
 if [ -d "downloads_cache/" ]
 then
-    rm -rf downloads_cache
+    rm -rf --verbose downloads_cache
 fi
 
 if [ -e "master.tar.gz" ]
 then
-    rm -f master.tar.gz
+    rm -f --verbose master.tar.gz
 fi
 
 if [ -e "metadata.tar.gz" ]
 then
-    rm -f metadata.tar.gz
+    rm -f --verbose metadata.tar.gz
 fi
 
 # CKAN Validation files
 wget --quiet $LATEST_CKAN_VALIDATE -O ckan-validate.py
 wget --quiet $LATEST_CKAN_SCHEMA -O CKAN.schema
-chmod a+x ckan-validate.py
+chmod a+x --verbose ckan-validate.py
 
 # fetch latest ckan.exe
 echo "Fetching latest ckan.exe"
@@ -251,7 +256,7 @@ wget --quiet $LATEST_CKAN_META -O metadata.tar.gz
 # TODO: Point to cache folder here instead if possible.
 if [ ! -d "downloads_cache/" ]
 then
-    mkdir downloads_cache
+    mkdir --verbose downloads_cache
 fi
 
 for ckan in $COMMIT_CHANGES
@@ -261,7 +266,7 @@ do
       echo "Lets try not to validate our build script with CKAN"
       continue
     fi
-    
+
     ./ckan-validate.py $ckan
     echo ----------------------------------------------
     cat $ckan | python -m json.tool
@@ -270,17 +275,17 @@ do
     # Extract identifier and KSP version.
     CURRENT_IDENTIFIER=$($JQ_PATH '.identifier' $ckan)
     CURRENT_KSP_VERSION=$($JQ_PATH 'if .ksp_version then .ksp_version else .ksp_version_max end' $ckan)
-    
+
     # Strip "'s.
     CURRENT_IDENTIFIER=${CURRENT_IDENTIFIER//'"'}
     CURRENT_KSP_VERSION=${CURRENT_KSP_VERSION//'"'}
-    
+
     echo "Extracted $CURRENT_IDENTIFIER as identifier."
     echo "Extracted $CURRENT_KSP_VERSION as KSP version."
-    
+
     # Get a list of all the OTHER files.
     OTHER_FILES=()
-   
+
     for o in $COMMIT_CHANGES
     do
         if [ "$ckan" != "$o" ] && [ "$ckan" != "build.sh" ]
@@ -292,7 +297,7 @@ do
 
     # Inject into metadata.
     inject_metadata $OTHER_FILES
-    
+
     # Create a dummy KSP install.
     create_dummy_ksp $CURRENT_KSP_VERSION $ghprbActualCommit
 
@@ -305,10 +310,13 @@ do
     # Show all installed mods.
     echo "Installed mods:"
     mono --debug ckan.exe list --porcelain
-    
+
     # Check the installed files for this .ckan file.
     mono ckan.exe show $CURRENT_IDENTIFIER
-    
+
     # Cleanup.
     mono ckan.exe ksp forget $KSP_NAME
+
+    # Blank line between files
+    echo
 done
