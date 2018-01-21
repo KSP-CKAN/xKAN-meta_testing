@@ -272,6 +272,12 @@ do
     cat $ckan | python -m json.tool
     echo ----------------------------------------------
 
+    if [[ "$ckan" =~ .frozen$ ]]
+    then
+        echo "Skipping install of frozen module '$ckan'"
+        continue
+    fi
+
     # Extract identifier and KSP version.
     CURRENT_IDENTIFIER=$($JQ_PATH '.identifier' $ckan)
     CURRENT_KSP_VERSION=$($JQ_PATH 'if .ksp_version then .ksp_version else .ksp_version_max end' $ckan)
