@@ -234,9 +234,14 @@ fi
 for ckan in $COMMIT_CHANGES
 do
     # set -e doesn't apply inside an if block CKAN#1273
-    if [ "$ckan" = "build.sh" ]; then
-      echo "Lets try not to validate our build script with CKAN"
-      continue
+    if [ "$ckan" = "build.sh" ]
+    then
+        echo "Lets try not to validate our build script with CKAN"
+        continue
+    elif [[ "$ckan" = "builds.json" ]]
+    then
+        echo "Skipping remote build map $ckan"
+        continue
     fi
 
     ./ckan-validate.py $ckan
