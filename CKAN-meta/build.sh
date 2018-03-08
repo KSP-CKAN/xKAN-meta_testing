@@ -2,7 +2,7 @@
 set -e
 
 # Default flags.
-KSP_VERSION_DEFAULT="1.3.1"
+KSP_VERSION_DEFAULT="1.4.0"
 KSP_NAME_DEFAULT="dummy"
 
 # Locations of CKAN and validation.
@@ -42,71 +42,43 @@ create_dummy_ksp () {
     # TODO: Manual hack, a better way to handle this kind of identifiers may be needed.
     case $KSP_VERSION in
     "0.23")
-        echo "Overriding '0.23' with '0.23.0'"
+        echo "Overriding '$KSP_VERSION' with '0.23.0'"
         KSP_VERSION="0.23.0"
         ;;
     "0.25")
-        echo "Overriding '0.25' with '0.25.0'"
+        echo "Overriding '$KSP_VERSION' with '0.25.0'"
         KSP_VERSION="0.25.0"
         ;;
     "0.90")
-        echo "Overriding '0.90' with '0.90.0'"
+        echo "Overriding '$KSP_VERSION' with '0.90.0'"
         KSP_VERSION="0.90.0"
         ;;
-    "1.0")
-        echo "Overriding '1.0' with '1.0.5'"
+    "1.0"|"1.0.99")
+        echo "Overriding '$KSP_VERSION' with '1.0.5'"
         KSP_VERSION="1.0.5"
         ;;
-    "1.0.99")
-        echo "Overriding '1.0.99' with '1.0.5'"
-        KSP_VERSION="1.0.5"
-        ;;
-    "1.1")
-        echo "Overriding '1.1' with '1.1.3'"
+    "1.1"|"1.1.99")
+        echo "Overriding '$KSP_VERSION' with '1.1.3'"
         KSP_VERSION="1.1.3"
         ;;
-    "1.1.99")
-        echo "Overriding '1.1.99' with '1.1.3'"
-        KSP_VERSION="1.1.3"
-        ;;
-    "1.2")
-        echo "Overriding '1.2' with '1.2.2'"
+    "1.2"|"1.2.99")
+        echo "Overriding '$KSP_VERSION' with '1.2.2'"
         KSP_VERSION="1.2.2"
         ;;
-    "1.2.99")
-        echo "Overriding '1.2.99' with '1.2.2'"
-        KSP_VERSION="1.2.2"
+    "1.3"|"1.3.8"|"1.3.9"|"1.3.99")
+        echo "Overriding '$KSP_VERSION' with '1.3.1'"
+        KSP_VERSION="1.3.1"
         ;;
-    "1.3")
-        echo "Overriding '1.3' with '$KSP_VERSION_DEFAULT'"
+    "1.4"|"1.4.8"|"1.4.9"|"1.4.99")
+        echo "Overriding '$KSP_VERSION' with '$KSP_VERSION_DEFAULT'"
+        KSP_VERSION="1.3.1"
+        ;;
+    "1.99.99"|"9.99.999")
+        echo "Overriding '$KSP_VERSION' with '$KSP_VERSION_DEFAULT'"
         KSP_VERSION=$KSP_VERSION_DEFAULT
         ;;
-    "1.3.8")
-        echo "Overriding '1.3.8' with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "1.3.9")
-        echo "Overriding '1.3.9' with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "1.3.99")
-        echo "Overriding '1.3.99' with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "1.99.99")
-        echo "Overriding '1.99.99' with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "9.99.999")
-        echo "Overriding '9.99.999' with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "any")
-        echo "Overriding any with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "null")
-        echo "Overriding 'null' with '$KSP_VERSION_DEFAULT'"
+    "any"|"null")
+        echo "Overriding $KSP_VERSION with '$KSP_VERSION_DEFAULT'"
         KSP_VERSION=$KSP_VERSION_DEFAULT
         ;;
     "")
@@ -262,9 +234,14 @@ fi
 for ckan in $COMMIT_CHANGES
 do
     # set -e doesn't apply inside an if block CKAN#1273
-    if [ "$ckan" = "build.sh" ]; then
-      echo "Lets try not to validate our build script with CKAN"
-      continue
+    if [ "$ckan" = "build.sh" ]
+    then
+        echo "Lets try not to validate our build script with CKAN"
+        continue
+    elif [[ "$ckan" = "builds.json" ]]
+    then
+        echo "Skipping remote build map $ckan"
+        continue
     fi
 
     ./ckan-validate.py $ckan
