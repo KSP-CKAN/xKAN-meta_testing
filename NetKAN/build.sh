@@ -241,6 +241,7 @@ do
     if ! [[ "$ckan" =~ ^NetKAN/ ]]
     then
         echo "Skipping file '$ckan': Not in the NetKAN directory."
+        continue
     elif [[ "$f" =~ .frozen$ ]]
     then
         echo "Lets try not to validate '$f' with jsonlint"
