@@ -238,7 +238,7 @@ echo "If you get an error below you should look for syntax errors in the metadat
 
 for f in $COMMIT_CHANGES
 do
-    if ! [[ "$ckan" =~ ^NetKAN/ ]]
+    if ! [[ "$f" =~ ^NetKAN/ ]]
     then
         echo "Skipping file '$ckan': Not in the NetKAN directory."
         continue
