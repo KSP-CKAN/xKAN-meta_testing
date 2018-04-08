@@ -240,7 +240,7 @@ for f in $COMMIT_CHANGES
 do
     if ! [[ "$f" =~ ^NetKAN/ ]]
     then
-        echo "Skipping file '$ckan': Not in the NetKAN directory."
+        echo "Skipping file '$f': Not in the NetKAN directory."
         continue
     elif [[ "$f" =~ .frozen$ ]]
     then
