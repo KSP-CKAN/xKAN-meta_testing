@@ -238,7 +238,11 @@ echo "If you get an error below you should look for syntax errors in the metadat
 
 for f in $COMMIT_CHANGES
 do
-    if [[ "$f" =~ .frozen$ ]]
+    if ! [[ "$f" =~ ^NetKAN/ ]]
+    then
+        echo "Skipping file '$f': Not in the NetKAN directory."
+        continue
+    elif [[ "$f" =~ .frozen$ ]]
     then
         echo "Lets try not to validate '$f' with jsonlint"
         continue
