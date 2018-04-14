@@ -142,25 +142,40 @@ versions_less_or_equal() {
     then
         # Null means unbounded, so always match
         return 0
-    elif [[ $VER1 =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]
+    elif [[ $VER1 =~ ^([0-9]+)\.([0-9]+) ]]
     then
         MAJOR1=${BASH_REMATCH[1]}
         MINOR1=${BASH_REMATCH[2]}
-        PATCH1=${BASH_REMATCH[3]}
-        if [[ $VER2 =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]
+        if [[ $VER2 =~ ^([0-9]+)\.([0-9]+) ]]
         then
             MAJOR2=${BASH_REMATCH[1]}
             MINOR2=${BASH_REMATCH[2]}
-            PATCH2=${BASH_REMATCH[3]}
             if   (( $MAJOR1 < $MAJOR2 )); then return 0
             elif (( $MAJOR1 > $MAJOR2 )); then return 1
             elif (( $MINOR1 < $MINOR2 )); then return 0
             elif (( $MINOR1 > $MINOR2 )); then return 1
-            elif (( $PATCH1 < $PATCH2 )); then return 0
-            elif (( $PATCH1 > $PATCH2 )); then return 1
             else
-                # All are equal
-                return 0
+                # First two numbers match, check for a third
+                if [[ $VER1 =~ ^[0-9]+\.[0-9]+\.([0-9]+) ]]
+                then
+                    PATCH1=${BASH_REMATCH[1]}
+                    if [[ $VER2 =~ ^[0-9]+\.[0-9]+\.([0-9]+) ]]
+                    then
+                        PATCH2=${BASH_REMATCH[1]}
+                        if   (( $PATCH1 < $PATCH2 )); then return 0
+                        elif (( $PATCH1 > $PATCH2 )); then return 1
+                        else
+                            # All are equal
+                            return 0
+                        fi
+                    else
+                        # No third digit, accept it
+                        return 0
+                    fi
+                else
+                    # No third digit, accept it
+                    return 0
+                fi
             fi
         else
             # Second version not valid
