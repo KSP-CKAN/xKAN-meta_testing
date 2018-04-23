@@ -1,10 +1,6 @@
 #!/bin/bash
 set -e
 
-# Default flags.
-KSP_VERSION_DEFAULT="1.4.2"
-KSP_NAME_DEFAULT="dummy"
-
 # Locations of CKAN and validation.
 LATEST_CKAN_URL="http://ckan-travis.s3.amazonaws.com/ckan.exe"
 LATEST_CKAN_VALIDATE="https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/bin/ckan-validate.py"
@@ -29,66 +25,9 @@ fi
 # test on. Takes version as an argument.
 # ------------------------------------------------
 create_dummy_ksp () {
-    KSP_VERSION=$KSP_VERSION_DEFAULT
-    KSP_NAME=$KSP_NAME_DEFAULT
-
-    # Set the version to the requested KSP version if supplied.
-    if [ $# -eq 2 ]
-    then
-        KSP_VERSION=$1
-        KSP_NAME=$2
-    fi
-
-    # TODO: Manual hack, a better way to handle this kind of identifiers may be needed.
-    case $KSP_VERSION in
-    "0.23")
-        echo "Overriding '$KSP_VERSION' with '0.23.0'"
-        KSP_VERSION="0.23.0"
-        ;;
-    "0.25")
-        echo "Overriding '$KSP_VERSION' with '0.25.0'"
-        KSP_VERSION="0.25.0"
-        ;;
-    "0.90")
-        echo "Overriding '$KSP_VERSION' with '0.90.0'"
-        KSP_VERSION="0.90.0"
-        ;;
-    "1.0"|"1.0.99")
-        echo "Overriding '$KSP_VERSION' with '1.0.5'"
-        KSP_VERSION="1.0.5"
-        ;;
-    "1.1"|"1.1.99")
-        echo "Overriding '$KSP_VERSION' with '1.1.3'"
-        KSP_VERSION="1.1.3"
-        ;;
-    "1.2"|"1.2.99")
-        echo "Overriding '$KSP_VERSION' with '1.2.2'"
-        KSP_VERSION="1.2.2"
-        ;;
-    "1.3"|"1.3.8"|"1.3.9"|"1.3.99")
-        echo "Overriding '$KSP_VERSION' with '1.3.1'"
-        KSP_VERSION="1.3.1"
-        ;;
-    "1.4"|"1.4.8"|"1.4.9"|"1.4.99")
-        echo "Overriding '$KSP_VERSION' with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "1.99.99"|"9.99.999")
-        echo "Overriding '$KSP_VERSION' with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "any"|"null")
-        echo "Overriding $KSP_VERSION with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    "")
-        echo "Overriding empty version with '$KSP_VERSION_DEFAULT'"
-        KSP_VERSION=$KSP_VERSION_DEFAULT
-        ;;
-    *)
-        echo "No override, Running with '$KSP_VERSION'"
-        ;;
-    esac
+    # Set the version to the requested KSP version
+    KSP_VERSION=$1
+    KSP_NAME=$2
 
     echo "Creating a dummy KSP '$KSP_VERSION' install"
 
@@ -163,9 +102,7 @@ inject_metadata () {
     tar -xzf metadata.tar.gz
 
     # Copy in the files to inject.
-    # TODO: Unsure why this suddenly needs [*] declaration
-    # but it does work
-    for f in ${OTHER_FILES[*]}
+    for f in "${OTHER_FILES[@]}"
     do
         echo "Injecting $f"
         DEST="CKAN-meta-master/$f"
@@ -177,6 +114,137 @@ inject_metadata () {
     rm -f --verbose master.tar.gz
     tar -czf master.tar.gz CKAN-meta-master
 }
+
+# ------------------------------------------------
+# Print the list of game versions we know about.
+# ------------------------------------------------
+get_versions() {
+    # Usage: VERSIONS=( $(get_versions) )
+
+    # Get our official list of releases
+    BUILDS_JSON=$(wget -q -O - https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/Core/builds.json)
+
+    # Get just the MAJOR.MINOR.PATCH strings
+    echo $BUILDS_JSON | "$JQ_PATH" --raw-output '[.builds[] | sub("\\.[0-9]+$"; "")] | unique | reverse | .[]'
+}
+
+# ------------------------------------------------
+# Compare two game versions.
+# Returns true if first <= second, false otherwise.
+# ------------------------------------------------
+versions_less_or_equal() {
+    # Usage: versions_less_or_equal major1.minor1.patch1 major2.minor2.patch2
+    # Returns: 0=true, 1=false, 2=error
+    VER1=$1
+    VER2=$2
+
+    if [[ -z $VER1 || -z $VER2 ]]
+    then
+        # Null means unbounded, so always match
+        return 0
+    elif [[ $VER1 =~ ^([0-9]+)\.([0-9]+) ]]
+    then
+        MAJOR1=${BASH_REMATCH[1]}
+        MINOR1=${BASH_REMATCH[2]}
+        if [[ $VER2 =~ ^([0-9]+)\.([0-9]+) ]]
+        then
+            MAJOR2=${BASH_REMATCH[1]}
+            MINOR2=${BASH_REMATCH[2]}
+            if   (( $MAJOR1 < $MAJOR2 )); then return 0
+            elif (( $MAJOR1 > $MAJOR2 )); then return 1
+            elif (( $MINOR1 < $MINOR2 )); then return 0
+            elif (( $MINOR1 > $MINOR2 )); then return 1
+            else
+                # First two numbers match, check for a third
+                if [[ $VER1 =~ ^[0-9]+\.[0-9]+\.([0-9]+) ]]
+                then
+                    PATCH1=${BASH_REMATCH[1]}
+                    if [[ $VER2 =~ ^[0-9]+\.[0-9]+\.([0-9]+) ]]
+                    then
+                        PATCH2=${BASH_REMATCH[1]}
+                        if   (( $PATCH1 < $PATCH2 )); then return 0
+                        elif (( $PATCH1 > $PATCH2 )); then return 1
+                        else
+                            # All are equal
+                            return 0
+                        fi
+                    else
+                        # No third digit, accept it
+                        return 0
+                    fi
+                else
+                    # No third digit, accept it
+                    return 0
+                fi
+            fi
+        else
+            # Second version not valid
+            return 2
+        fi
+    else
+        # First version not valid
+        return 2
+    fi
+}
+
+# ------------------------------------------------
+# Print versions that match the given min and max.
+# ------------------------------------------------
+matching_versions() {
+    # ASSUMES: We have done VERSIONS=( $(get_versions) ) globally
+    # Usage: matching_versions ksp_version_min ksp_version_max
+    MIN=$1
+    MAX=$2
+
+    if [[ ( -z "$MIN" && -z "$MAX" ) || ( "$MIN" = any && "$MAX" = any ) ]]
+    then
+        echo "${VERSIONS[@]}"
+    else
+        declare -a MATCHES
+        MATCHES=()
+        for VER in "${VERSIONS[@]}"
+        do
+            if versions_less_or_equal "$MIN" "$VER" && versions_less_or_equal "$VER" "$MAX"
+            then
+                MATCHES+=($VER)
+            fi
+        done
+        echo "${MATCHES[@]}"
+    fi
+}
+
+# ------------------------------------------------
+# Print versions that match the given .ckan file.
+# ------------------------------------------------
+ckan_matching_versions() {
+    # Usage: ckan_matching_versions modname-version.ckan
+    CKAN="$1"
+
+    # Load the metadata
+    JSON=$(cat "$CKAN")
+
+    # Get min and max versions
+    MIN=$(echo $JSON | "$JQ_PATH" --raw-output '.ksp_version // .ksp_version_min // ""')
+    MAX=$(echo $JSON | "$JQ_PATH" --raw-output '.ksp_version // .ksp_version_max // ""')
+
+    matching_versions "$MIN" "$MAX"
+}
+
+# ------------------------------------------------
+# Print max real version compatible with given .ckan file.
+# Even if you claim compatibility with 99.99.99, this
+# will only return the most recent release.
+# ------------------------------------------------
+ckan_max_real_version() {
+    # Usage: ckan_max_real_version modname-version.ckan
+    CKAN="$1"
+
+    VERS=( $(ckan_matching_versions "$CKAN") )
+    echo "${VERS[0]}"
+}
+
+declare -a VERSIONS
+VERSIONS=( $(get_versions) )
 
 # ------------------------------------------------
 # Main entry point.
@@ -256,12 +324,12 @@ do
     fi
 
     # Extract identifier and KSP version.
-    CURRENT_IDENTIFIER=$($JQ_PATH '.identifier' $ckan)
-    CURRENT_KSP_VERSION=$($JQ_PATH 'if .ksp_version then .ksp_version else .ksp_version_max end' $ckan)
+    CURRENT_IDENTIFIER=$($JQ_PATH --raw-output '.identifier' $ckan)
+    CURRENT_KSP_VERSION=$(ckan_max_real_version "$ckan")
 
-    # Strip "'s.
-    CURRENT_IDENTIFIER=${CURRENT_IDENTIFIER//'"'}
-    CURRENT_KSP_VERSION=${CURRENT_KSP_VERSION//'"'}
+    # TODO: Someday we could loop over ( $(ckan_matching_versions "$ckan") ) to find
+    #       working versions less than the maximum, if the maximum doesn't work.
+    #       (E.g., a dependency isn't updated yet.)
 
     echo "Extracted $CURRENT_IDENTIFIER as identifier."
     echo "Extracted $CURRENT_KSP_VERSION as KSP version."
