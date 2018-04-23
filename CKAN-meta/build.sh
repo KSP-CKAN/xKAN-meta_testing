@@ -125,7 +125,10 @@ get_versions() {
     BUILDS_JSON=$(wget -q -O - https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/Core/builds.json)
 
     # Get just the MAJOR.MINOR.PATCH strings
-    echo $BUILDS_JSON | "$JQ_PATH" --raw-output '[.builds[] | sub("\\.[0-9]+$"; "")] | unique | reverse | .[]'
+    echo $BUILDS_JSON | "$JQ_PATH" --raw-output '.builds[]' \
+        | sed -e 's/\.[0-9]\+$//' \
+        | uniq \
+        | tac
 }
 
 # ------------------------------------------------
