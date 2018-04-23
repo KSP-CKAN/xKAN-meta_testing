@@ -54,7 +54,16 @@ create_dummy_ksp () {
     #       it will be auto-created as a plain directory!
     ln -s --verbose ../../downloads_cache/ dummy_ksp/CKAN/downloads
 
+    # Set the base game version
     echo "Version $KSP_VERSION" > dummy_ksp/readme.txt
+
+    # Simulate the DLC if base game version 1.4.0 or later
+    if versions_less_or_equal 1.4.0 "$KSP_VERSION"
+    then        
+        mkdir --p --verbose \
+            dummy_ksp/GameData/SquadExpansion/MakingHistory
+        echo "Version 1.1.0" > dummy_ksp/GameData/SquadExpansion/MakingHistory/readme.txt
+    fi
 
     # Copy in resources.
     cp --verbose ckan.exe dummy_ksp/ckan.exe
