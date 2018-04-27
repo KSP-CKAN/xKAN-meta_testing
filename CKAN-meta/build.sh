@@ -59,7 +59,7 @@ create_dummy_ksp () {
 
     # Simulate the DLC if base game version 1.4.0 or later
     if versions_less_or_equal 1.4.0 "$KSP_VERSION"
-    then        
+    then
         mkdir --p --verbose \
             dummy_ksp/GameData/SquadExpansion/MakingHistory
         echo "Version 1.1.0" > dummy_ksp/GameData/SquadExpansion/MakingHistory/readme.txt
@@ -236,8 +236,8 @@ ckan_matching_versions() {
     JSON=$(cat "$CKAN")
 
     # Get min and max versions
-    MIN=$(echo $JSON | "$JQ_PATH" --raw-output '.ksp_version // .ksp_version_min // ""')
-    MAX=$(echo $JSON | "$JQ_PATH" --raw-output '.ksp_version // .ksp_version_max // ""')
+    MIN=$(echo $JSON | "$JQ_PATH" --raw-output 'if .ksp_version then .ksp_version else .ksp_version_min end')
+    MAX=$(echo $JSON | "$JQ_PATH" --raw-output 'if .ksp_version then .ksp_version else .ksp_version_max end')
 
     matching_versions "$MIN" "$MAX"
 }

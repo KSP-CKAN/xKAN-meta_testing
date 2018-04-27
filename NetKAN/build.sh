@@ -247,8 +247,8 @@ ckan_matching_versions() {
     JSON=$(cat "$CKAN")
 
     # Get min and max versions
-    MIN=$(echo $JSON | "$JQ_PATH" --raw-output '.ksp_version // .ksp_version_min // ""')
-    MAX=$(echo $JSON | "$JQ_PATH" --raw-output '.ksp_version // .ksp_version_max // ""')
+    MIN=$(echo $JSON | "$JQ_PATH" --raw-output 'if .ksp_version then .ksp_version else .ksp_version_min end')
+    MAX=$(echo $JSON | "$JQ_PATH" --raw-output 'if .ksp_version then .ksp_version else .ksp_version_max end')
 
     matching_versions "$MIN" "$MAX"
 }
