@@ -243,12 +243,9 @@ ckan_matching_versions() {
     # Usage: ckan_matching_versions modname-version.ckan
     CKAN="$1"
 
-    # Load the metadata
-    JSON=$(cat "$CKAN")
-
     # Get min and max versions
-    MIN=$(echo $JSON | "$JQ_PATH" --raw-output 'if .ksp_version then .ksp_version else .ksp_version_min end')
-    MAX=$(echo $JSON | "$JQ_PATH" --raw-output 'if .ksp_version then .ksp_version else .ksp_version_max end')
+    MIN=$("$JQ_PATH" --raw-output 'if .ksp_version then .ksp_version else .ksp_version_min end' "$CKAN")
+    MAX=$("$JQ_PATH" --raw-output 'if .ksp_version then .ksp_version else .ksp_version_max end' "$CKAN")
 
     matching_versions "$MIN" "$MAX"
 }
