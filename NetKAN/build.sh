@@ -21,6 +21,7 @@ EXIT_FAILED_PROVE_STEP=1
 EXIT_FAILED_JSON_VALIDATION=2
 EXIT_FAILED_ROOT_NETKANS=3
 EXIT_FAILED_DUPLICATE_IDENTIFIERS=4
+EXIT_FAILED_NO_GAME_VERSION=5
 
 # Allow us to specify a commit id as the first argument
 if [ -n "$1" ]
@@ -441,6 +442,12 @@ do
     # Extract identifier and KSP version.
     CURRENT_IDENTIFIER=$($JQ_PATH --raw-output '.identifier' $ckan)
     CURRENT_KSP_VERSION=$(ckan_max_real_version "$ckan")
+
+    if [[ -z $CURRENT_KSP_VERSION ]]
+    then
+        echo "$ckan doesn't match any valid game version"
+        exit $EXIT_FAILED_NO_GAME_VERSION
+    fi
 
     # TODO: Someday we could loop over ( $(ckan_matching_versions "$ckan") ) to find
     #       working versions less than the maximum, if the maximum doesn't work.
