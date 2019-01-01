@@ -100,15 +100,11 @@ create_dummy_ksp () {
 
 # ------------------------------------------------
 # Function for injecting metadata into a tar.gz
-# archive. Assummes metadata.tar.gz to be present.
+# archive. Assumes metadata.tar.gz to be present.
 # ------------------------------------------------
-inject_metadata () {
-    # TODO: Arrays + Bash Functions aren't fun. This needs
-    # Improvement but appears to work. The variables are
-    # available to the called functions.
-
+inject_metadata() {
     # Check input, requires at least 1 argument.
-    if [ $# -ne 1 ]
+    if (( $# < 1 ))
     then
         echo "Nothing to inject."
         cp --verbose metadata.tar.gz master.tar.gz
@@ -122,10 +118,22 @@ inject_metadata () {
     tar -xzf metadata.tar.gz
 
     # Copy in the files to inject.
-    for f in "${OTHER_FILES[@]}"
+    for f in "$@"
     do
         echo "Injecting: $f"
-        DEST="CKAN-meta-master/$f"
+
+        # Find proper destination path
+        ID=$($JQ_PATH --raw-output '.identifier' $f)
+        DEST="CKAN-meta-master/$ID/$(basename $f)"
+
+        # Print a diff if the generated file already exists
+        if [[ -e $DEST ]]
+        then
+            echo "Changes:"
+            diff -su --label Current "$DEST" --label New "$f"
+            echo
+        fi
+
         mkdir -p --verbose $(dirname "$DEST")
         cp --verbose $f "$DEST"
     done
@@ -410,6 +418,16 @@ do
     fi
 done
 
+# Get array of all the files
+OTHER_FILES=(built/*.ckan)
+
+# Check if we found any
+if (( ${#OTHER_FILES[@]} > 0 ))
+then
+    # Inject into metadata
+    inject_metadata "${OTHER_FILES[@]}"
+fi
+
 # Test all the built files.
 for ckan in built/*.ckan
 do
@@ -426,17 +444,6 @@ do
     cat $ckan | python -m json.tool
     echo "----------------------------------------------"
     echo ""
-
-    # Get a list of all the OTHER files.
-    OTHER_FILES=()
-
-    for o in built/*.ckan
-    do
-        OTHER_FILES+=($o)
-    done
-
-    # Inject into metadata.
-    inject_metadata $OTHER_FILES
 
     # Extract identifier and KSP version.
     CURRENT_IDENTIFIER=$($JQ_PATH --raw-output '.identifier' $ckan)
