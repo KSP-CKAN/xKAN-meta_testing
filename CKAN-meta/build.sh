@@ -17,7 +17,7 @@ EXIT_OK=0
 if [ -n "$1" ]
 then
     echo "Using CLI argument of $1"
-    ghprbActualCommit=$1
+    ghprbActualCommit="$1"
 fi
 
 # ------------------------------------------------
@@ -26,8 +26,8 @@ fi
 # ------------------------------------------------
 create_dummy_ksp () {
     # Set the version to the requested KSP version
-    KSP_VERSION=$1
-    KSP_NAME=$2
+    KSP_VERSION="$1"
+    KSP_NAME="$2"
 
     echo "Creating a dummy KSP '$KSP_VERSION' install"
 
@@ -71,18 +71,18 @@ create_dummy_ksp () {
     # Reset the Mono registry.
     if [ "$USER" = "jenkins" ]
     then
-        REGISTRY_FILE=$HOME/.mono/registry/CurrentUser/software/ckan/values.xml
-        if [ -r $REGISTRY_FILE ]
+        REGISTRY_FILE="$HOME"/.mono/registry/CurrentUser/software/ckan/values.xml
+        if [ -r "$REGISTRY_FILE" ]
         then
-            rm -f --verbose $REGISTRY_FILE
+            rm -f --verbose "$REGISTRY_FILE"
         fi
     fi
 
     # Register the new dummy install.
-    mono ckan.exe ksp add $KSP_NAME "`pwd`/dummy_ksp"
+    mono ckan.exe ksp add "$KSP_NAME" "`pwd`/dummy_ksp"
 
     # Set the instance to default.
-    mono ckan.exe ksp default $KSP_NAME
+    mono ckan.exe ksp default "$KSP_NAME"
 
     # Point to the local metadata instead of GitHub.
     mono ckan.exe repo add local "file://`pwd`/master.tar.gz"
@@ -116,7 +116,7 @@ inject_metadata () {
         echo "Injecting $f"
         DEST="CKAN-meta-master/$f"
         mkdir -p --verbose $(dirname "$DEST")
-        cp --verbose $f "$DEST"
+        cp --verbose "$f" "$DEST"
     done
 
     # Recompress the archive.
@@ -147,8 +147,8 @@ get_versions() {
 versions_less_or_equal() {
     # Usage: versions_less_or_equal major1.minor1.patch1 major2.minor2.patch2
     # Returns: 0=true, 1=false, 2=error
-    VER1=$1
-    VER2=$2
+    VER1="$1"
+    VER2="$2"
 
     if [[ -z $VER1 || -z $VER2 ]]
     then
@@ -205,8 +205,8 @@ versions_less_or_equal() {
 matching_versions() {
     # ASSUMES: We have done VERSIONS=( $(get_versions) ) globally
     # Usage: matching_versions ksp_version_min ksp_version_max
-    MIN=$1
-    MAX=$2
+    MIN="$1"
+    MAX="$2"
 
     if [[ ( -z "$MIN" && -z "$MAX" ) || ( "$MIN" = any && "$MAX" = any ) ]]
     then
@@ -268,7 +268,7 @@ then
     export COMMIT_CHANGES="`git diff --diff-filter=AM --name-only --stat origin/master...HEAD`"
 else
     echo "No commit provided, skipping further tests."
-    exit $EXIT_OK
+    exit "$EXIT_OK"
 fi
 
 # Make sure we start from a clean slate.
@@ -288,18 +288,18 @@ then
 fi
 
 # CKAN Validation files
-wget --quiet $LATEST_CKAN_VALIDATE -O ckan-validate.py
-wget --quiet $LATEST_CKAN_SCHEMA -O CKAN.schema
+wget --quiet "$LATEST_CKAN_VALIDATE" -O ckan-validate.py
+wget --quiet "$LATEST_CKAN_SCHEMA" -O CKAN.schema
 chmod a+x --verbose ckan-validate.py
 
 # fetch latest ckan.exe
 echo "Fetching latest ckan.exe"
-wget --quiet $LATEST_CKAN_URL -O ckan.exe
+wget --quiet "$LATEST_CKAN_URL" -O ckan.exe
 mono ckan.exe version
 
 # Fetch the latest metadata.
 echo "Fetching latest metadata"
-wget --quiet $LATEST_CKAN_META -O metadata.tar.gz
+wget --quiet "$LATEST_CKAN_META" -O metadata.tar.gz
 
 # Create folders.
 # TODO: Point to cache folder here instead if possible.
@@ -321,9 +321,9 @@ do
         continue
     fi
 
-    ./ckan-validate.py $ckan
+    ./ckan-validate.py "$ckan"
     echo ----------------------------------------------
-    cat $ckan | python -m json.tool
+    cat "$ckan" | python -m json.tool
     echo ----------------------------------------------
 
     if [[ "$ckan" =~ .frozen$ ]]
@@ -333,7 +333,7 @@ do
     fi
 
     # Extract identifier and KSP version.
-    CURRENT_IDENTIFIER=$($JQ_PATH --raw-output '.identifier' $ckan)
+    CURRENT_IDENTIFIER=$($JQ_PATH --raw-output '.identifier' "$ckan")
     CURRENT_KSP_VERSION=$(ckan_max_real_version "$ckan")
 
     # TODO: Someday we could loop over ( $(ckan_matching_versions "$ckan") ) to find
@@ -359,23 +359,23 @@ do
     inject_metadata $OTHER_FILES
 
     # Create a dummy KSP install.
-    create_dummy_ksp $CURRENT_KSP_VERSION $ghprbActualCommit
+    create_dummy_ksp "$CURRENT_KSP_VERSION" "$ghprbActualCommit"
 
     echo "Running ckan update"
     mono ckan.exe update
 
-    echo Running ckan install -c $ckan
-    mono --debug ckan.exe install -c $ckan --headless
+    echo Running ckan install -c "$ckan"
+    mono --debug ckan.exe install -c "$ckan" --headless
 
     # Show all installed mods.
     echo "Installed mods:"
     mono --debug ckan.exe list --porcelain
 
     # Check the installed files for this .ckan file.
-    mono ckan.exe show $CURRENT_IDENTIFIER
+    mono ckan.exe show "$CURRENT_IDENTIFIER"
 
     # Cleanup.
-    mono ckan.exe ksp forget $KSP_NAME
+    mono ckan.exe ksp forget "$KSP_NAME"
 
     # Blank line between files
     echo
