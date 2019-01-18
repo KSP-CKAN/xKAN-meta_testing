@@ -21,6 +21,7 @@ EXIT_FAILED_PROVE_STEP=1
 EXIT_FAILED_JSON_VALIDATION=2
 EXIT_FAILED_ROOT_NETKANS=3
 EXIT_FAILED_DUPLICATE_IDENTIFIERS=4
+EXIT_FAILED_NO_GAME_VERSION=5
 
 # Allow us to specify a commit id as the first argument
 if [ -n "$1" ]
@@ -31,67 +32,48 @@ fi
 
 # ------------------------------------------------
 # Function for creating dummy KSP directories to
-# test on. Takes version as an argument.
+# test on.
+# Usage: create_dummy_ksp name main_ver ver2 ver3 ...
 # ------------------------------------------------
-create_dummy_ksp () {
-    # Set the version to the requested KSP version
+create_dummy_ksp() {
+    KSP_NAME="$1"
+    shift
     KSP_VERSION="$1"
-    KSP_NAME="$2"
+    shift
+    COMPAT_VERSIONS=("$@")
 
     echo "Creating a dummy KSP '$KSP_VERSION' install"
 
     # Remove any existing KSP dummy install.
-    if [ -d "dummy_ksp/" ]
+    if [[ -d dummy_ksp/ ]]
     then
         rm -rf dummy_ksp
     fi
 
-    # Create a new dummy KSP.
-    mkdir -p --verbose \
-        dummy_ksp \
-        dummy_ksp/CKAN \
-        dummy_ksp/GameData \
-        dummy_ksp/Ships/ \
-        dummy_ksp/Ships/VAB \
-        dummy_ksp/Ships/SPH \
-        dummy_ksp/Ships/@thumbs \
-        dummy_ksp/Ships/@thumbs/VAB \
-        dummy_ksp/Ships/@thumbs/SPH
+    # Create dummy install.
+    mono ckan.exe ksp fake --set-default "$KSP_NAME" dummy_ksp "$KSP_VERSION" 1.1.0
 
-    # Link to the downloads cache.
-    # NOTE: If this isn't done before ckan.exe uses the instance,
-    #       it will be auto-created as a plain directory!
+    # Add other compatible versions.
+    for compVer in "${COMPAT_VERSIONS[@]}"
+    do
+        mono ckan.exe compat add "$compVer"
+    done
+
+    # Link to the netkan downloads cache as a legacy cache.
     ln -s --verbose ../../downloads_cache/ dummy_ksp/CKAN/downloads
-
-    # Set the base game version
-    echo "Version $KSP_VERSION" > dummy_ksp/readme.txt
-
-    # Simulate the DLC if base game version 1.4.0 or later
-    if versions_less_or_equal 1.4.0 "$KSP_VERSION"
-    then
-        mkdir --p --verbose \
-            dummy_ksp/GameData/SquadExpansion/MakingHistory
-        echo "Version 1.1.0" > dummy_ksp/GameData/SquadExpansion/MakingHistory/readme.txt
-    fi
 
     # Copy in resources.
     cp --verbose ckan.exe dummy_ksp/ckan.exe
 
     # Reset the Mono registry.
-    if [ "$USER" = "jenkins" ]
+    if [[ "$USER" = "jenkins" ]]
     then
         REGISTRY_FILE="$HOME"/.mono/registry/CurrentUser/software/ckan/values.xml
-        if [ -r "$REGISTRY_FILE" ]
+        if [[ -r "$REGISTRY_FILE" ]]
         then
             rm -f --verbose "$REGISTRY_FILE"
         fi
     fi
-
-    # Register the new dummy install.
-    mono ckan.exe ksp add "$KSP_NAME" "`pwd`/dummy_ksp"
-
-    # Set the instance to default.
-    mono ckan.exe ksp default "$KSP_NAME"
 
     # Point to the local metadata instead of GitHub.
     mono ckan.exe repo add local "file://`pwd`/master.tar.gz"
@@ -259,16 +241,18 @@ ckan_matching_versions() {
 }
 
 # ------------------------------------------------
-# Print max real version compatible with given .ckan file.
-# Even if you claim compatibility with 99.99.99, this
-# will only return the most recent release.
+# Print versions indicated in pull request body text.
+# Input comes from the Jenkins ghprbPullLongDescription environment variable.
+# We look for a string that looks like:
+#   ckan compat add 1.4 1.5 1.6
+# And we print out the version numbers that we find.
 # ------------------------------------------------
-ckan_max_real_version() {
-    # Usage: ckan_max_real_version modname-version.ckan
-    CKAN="$1"
-
-    VERS=( $(ckan_matching_versions "$CKAN") )
-    echo "${VERS[0]}"
+versions_from_description() {
+    if [[ $ghprbPullLongDescription =~ 'ckan compat add'((' '[0-9.]+)+) ]]
+    then
+        # Unquoted so each version is a separate string
+        echo ${BASH_REMATCH[1]}
+    fi
 }
 
 declare -a VERSIONS
@@ -441,23 +425,25 @@ do
     ./ckan-validate.py "$ckan"
     echo "----------------------------------------------"
     echo ""
-    cat "$ckan" | python -m json.tool
+    cat "$ckan"
     echo "----------------------------------------------"
     echo ""
 
     # Extract identifier and KSP version.
     CURRENT_IDENTIFIER=$($JQ_PATH --raw-output '.identifier' "$ckan")
-    CURRENT_KSP_VERSION=$(ckan_max_real_version "$ckan")
+    KSP_VERSIONS=( $(ckan_matching_versions "$ckan") $(versions_from_description) )
 
-    # TODO: Someday we could loop over ( $(ckan_matching_versions "$ckan") ) to find
-    #       working versions less than the maximum, if the maximum doesn't work.
-    #       (E.g., a dependency isn't updated yet.)
+    if (( ${#KSP_VERSIONS[@]} < 1 ))
+    then
+        echo "$ckan doesn't match any valid game version"
+        exit "$EXIT_FAILED_NO_GAME_VERSION"
+    fi
 
     echo "Extracted $CURRENT_IDENTIFIER as identifier."
-    echo "Extracted $CURRENT_KSP_VERSION as KSP version."
+    echo "Extracted ${KSP_VERSIONS[*]} as KSP versions."
 
     # Create a dummy KSP install.
-    create_dummy_ksp "$CURRENT_KSP_VERSION" "$KSP_NAME"
+    create_dummy_ksp "$KSP_NAME" "${KSP_VERSIONS[@]}"
 
     echo "Running ckan update"
     mono ckan.exe update
