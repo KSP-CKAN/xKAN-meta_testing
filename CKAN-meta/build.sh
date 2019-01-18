@@ -41,6 +41,16 @@ create_dummy_ksp() {
         rm -rf dummy_ksp
     fi
 
+    # Reset the Mono registry.
+    if [[ "$USER" = "jenkins" ]]
+    then
+        REGISTRY_FILE="$HOME"/.mono/registry/CurrentUser/software/ckan/values.xml
+        if [[ -r "$REGISTRY_FILE" ]]
+        then
+            rm -f --verbose "$REGISTRY_FILE"
+        fi
+    fi
+
     # Create dummy install.
     mono ckan.exe ksp fake --set-default "$KSP_NAME" dummy_ksp "$KSP_VERSION" 1.1.0
 
@@ -55,16 +65,6 @@ create_dummy_ksp() {
 
     # Copy in resources.
     cp --verbose ckan.exe dummy_ksp/ckan.exe
-
-    # Reset the Mono registry.
-    if [[ "$USER" = "jenkins" ]]
-    then
-        REGISTRY_FILE="$HOME"/.mono/registry/CurrentUser/software/ckan/values.xml
-        if [[ -r "$REGISTRY_FILE" ]]
-        then
-            rm -f --verbose "$REGISTRY_FILE"
-        fi
-    fi
 
     # Point to the local metadata instead of GitHub.
     mono ckan.exe repo add local "file://`pwd`/master.tar.gz"
