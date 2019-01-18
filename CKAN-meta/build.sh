@@ -52,7 +52,7 @@ create_dummy_ksp() {
     fi
 
     # Create dummy install.
-    mono ckan.exe ksp fake --set-default "$KSP_NAME" dummy_ksp "$KSP_VERSION" 1.1.0
+    mono ckan.exe ksp fake --set-default --headless "$KSP_NAME" dummy_ksp "$KSP_VERSION" 1.1.0
 
     # Add other compatible versions.
     for compVer in "${COMPAT_VERSIONS[@]}"
