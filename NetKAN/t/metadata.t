@@ -174,6 +174,24 @@ foreach my $shortname (sort keys %files) {
             );
         }
     }
+
+    foreach my $relgroup (grep { defined } (
+        $metadata->{depends},
+        $metadata->{recommends},
+        $metadata->{suggests},
+        $metadata->{supports},
+        $metadata->{conflicts}
+    )) {
+        foreach my $rel (@{$relgroup}) {
+            if ($rel->{any-of}) {
+                ok(
+                    compare_version($spec_version, "v1.26"),
+                    "$shortname - spec_version v1.26+ required for 'any-of'"
+                );
+            }
+        }
+    }
+
 }
 
 sub compare_version {
