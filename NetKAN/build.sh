@@ -112,7 +112,7 @@ inject_metadata() {
         if [[ -e $DEST ]]
         then
             echo "Changes:"
-            diff -su --label Current "$DEST" --label New "$f"
+            diff -su --label Current "$DEST" --label New "$f" || true
             echo
         fi
 
