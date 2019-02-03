@@ -183,10 +183,10 @@ foreach my $shortname (sort keys %files) {
         $metadata->{conflicts}
     )) {
         foreach my $rel (@{$relgroup}) {
-            if ($rel->{any-of}) {
+            if ($rel->{any_of}) {
                 ok(
                     compare_version($spec_version, "v1.26"),
-                    "$shortname - spec_version v1.26+ required for 'any-of'"
+                    "$shortname - spec_version v1.26+ required for 'any_of'"
                 );
             }
         }
