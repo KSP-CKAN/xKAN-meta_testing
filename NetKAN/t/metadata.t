@@ -124,6 +124,13 @@ foreach my $shortname (sort keys %files) {
         );
     }
 
+    if ($metadata->{replaced_by}) {
+        ok(
+            compare_version($spec_version, "v1.26"),
+            "$shortname - spec_version v1.26+ required for 'replaced_by'"
+        );
+    }
+
     foreach my $install (@{$metadata->{install}}) {
         if ($install->{install_to} =~ m{^GameData/}) {
             ok(
