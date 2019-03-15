@@ -30,13 +30,29 @@ foreach my $shortname (sort keys %files) {
         "$shortname: CKAN identifiers must consist only of letters, numbers, and dashes, and must start with a letter or number."
     );
 
-    foreach my $relation (qw(depends recommends suggests conflicts)) {
-        foreach my $mod (@{$metadata->{$relation}}) {
-            like(
-                $mod->{name},
-                $ident_qr,
-                "$shortname: $mod->{name} in $relation is not a valid CKAN identifier"
-            );
+    my $spec_version = $metadata->{spec_version};
+
+    foreach my $relation (qw(depends recommends suggests conflicts supports)) {
+        foreach my $rel (@{$metadata->{$relation}}) {
+            if ($rel->{any_of}) {
+                ok(
+                    compare_version($spec_version, "v1.26"),
+                    "$shortname - spec_version v1.26+ required for 'any_of'"
+                );
+                foreach my $mod ($rel->{any_of}) {
+                    like(
+                        $mod->{name},
+                        $ident_qr,
+                        "$shortname: $mod->{name} in $relation any_of is not a valid CKAN identifier"
+                    );
+                }
+            } else {
+                like(
+                    $rel->{name},
+                    $ident_qr,
+                    "$shortname: $rel->{name} in $relation is not a valid CKAN identifier"
+                );
+            }
         }
     }
 
@@ -97,7 +113,6 @@ foreach my $shortname (sort keys %files) {
         }
     }
 
-    my $spec_version = $metadata->{spec_version};
     ok(
         $spec_version =~ m/^1$|^v\d\.\d\d?$/,
         "spec version must be 1 or in the 'vX.X' format"
@@ -179,23 +194,6 @@ foreach my $shortname (sort keys %files) {
                 compare_version($spec_version,"v1.18"),
                 "$shortname - spec_version v1.18+ required for 'as'"
             );
-        }
-    }
-
-    foreach my $relgroup (grep { defined } (
-        $metadata->{depends},
-        $metadata->{recommends},
-        $metadata->{suggests},
-        $metadata->{supports},
-        $metadata->{conflicts}
-    )) {
-        foreach my $rel (@{$relgroup}) {
-            if ($rel->{any_of}) {
-                ok(
-                    compare_version($spec_version, "v1.26"),
-                    "$shortname - spec_version v1.26+ required for 'any_of'"
-                );
-            }
         }
     }
 
