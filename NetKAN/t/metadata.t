@@ -39,7 +39,7 @@ foreach my $shortname (sort keys %files) {
                     compare_version($spec_version, "v1.26"),
                     "$shortname - spec_version v1.26+ required for 'any_of'"
                 );
-                foreach my $mod ($rel->{any_of}) {
+                foreach my $mod (@{$rel->{any_of}}) {
                     like(
                         $mod->{name},
                         $ident_qr,
