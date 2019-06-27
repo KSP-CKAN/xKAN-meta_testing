@@ -61,7 +61,16 @@ create_dummy_ksp() {
     fi
 
     # Create dummy install.
-    mono ckan.exe ksp fake --set-default --headless "$KSP_NAME" dummy_ksp "$KSP_VERSION" 1.1.0
+    # The DLCs are simulated depending on the version.
+    if versions_less_or_equal "1.7.1" "$KSP_VERSION"
+    then
+        mono ckan.exe ksp fake --set-default --headless "$KSP_NAME" dummy_ksp "$KSP_VERSION" --MakingHistory 1.1.0 --BreakingGround 1.0.0
+    elif versions_less_or_equal "1.4.1" "$KSP_VERSION"
+    then
+        mono ckan.exe ksp fake --set-default --headless "$KSP_NAME" dummy_ksp "$KSP_VERSION" --MakingHistory 1.1.0
+    else
+        mono ckan.exe ksp fake --set-default --headless "$KSP_NAME" dummy_ksp "$KSP_VERSION"
+    fi
 
     # Add other compatible versions.
     for compVer in "${COMPAT_VERSIONS[@]}"
