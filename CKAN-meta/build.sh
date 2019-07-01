@@ -1,10 +1,10 @@
 #!/bin/bash
+
 set -e
 
-# Locations of CKAN and validation.
+# Locations of CKAN and NetKAN.
 LATEST_CKAN_URL="http://ckan-travis.s3.amazonaws.com/ckan.exe"
-LATEST_CKAN_VALIDATE="https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/bin/ckan-validate.py"
-LATEST_CKAN_SCHEMA="https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/CKAN.schema"
+LATEST_NETKAN_URL="http://ckan-travis.s3.amazonaws.com/netkan.exe"
 LATEST_CKAN_META="https://github.com/KSP-CKAN/CKAN-meta/archive/master.tar.gz"
 
 # Third party utilities.
@@ -12,6 +12,7 @@ JQ_PATH="jq"
 
 # Return codes.
 EXIT_OK=0
+EXIT_NETKAN_VALIDATION_FAILED=2
 EXIT_FAILED_NO_GAME_VERSION=5
 
 # Allow us to specify a commit id as the first argument
@@ -255,7 +256,7 @@ VERSIONS=( $(get_versions) )
 # Find the changes to test.
 echo "Finding changes to test..."
 
-if [ -n "$ghprbActualCommit" ]
+if [[ -n "$ghprbActualCommit" ]]
 then
     echo "Commit hash: $ghprbActualCommit"
     export COMMIT_CHANGES="`git diff --diff-filter=AMR --name-only --stat origin/master...HEAD`"
@@ -265,30 +266,29 @@ else
 fi
 
 # Make sure we start from a clean slate.
-if [ -d "downloads_cache/" ]
+if [[ -d "downloads_cache/" ]]
 then
     rm -rf --verbose downloads_cache
 fi
 
-if [ -e "master.tar.gz" ]
+if [[ -e "master.tar.gz" ]]
 then
     rm -f --verbose master.tar.gz
 fi
 
-if [ -e "metadata.tar.gz" ]
+if [[ -e "metadata.tar.gz" ]]
 then
     rm -f --verbose metadata.tar.gz
 fi
-
-# CKAN Validation files
-wget --quiet "$LATEST_CKAN_VALIDATE" -O ckan-validate.py
-wget --quiet "$LATEST_CKAN_SCHEMA" -O CKAN.schema
-chmod a+x --verbose ckan-validate.py
 
 # fetch latest ckan.exe
 echo "Fetching latest ckan.exe"
 wget --quiet "$LATEST_CKAN_URL" -O ckan.exe
 mono ckan.exe version
+
+echo "Fetching latest netkan.exe"
+wget --quiet "$LATEST_NETKAN_URL" -O netkan.exe
+mono netkan.exe --version
 
 # Fetch the latest metadata.
 echo "Fetching latest metadata"
@@ -304,26 +304,33 @@ fi
 for ckan in $COMMIT_CHANGES
 do
     # set -e doesn't apply inside an if block CKAN#1273
-    if [ "$ckan" = "build.sh" ]
+    if [[ "$ckan" = "build.sh" ]]
     then
-        echo "Lets try not to validate our build script with CKAN"
+        echo "Skipping build script '$ckan'"
         continue
     elif [[ "$ckan" = "builds.json" ]]
     then
-        echo "Skipping remote build map $ckan"
+        echo "Skipping remote build map '$ckan'"
+        continue
+    fi
+    if [[ "$ckan" =~ .frozen$ ]]
+    then
+        echo "Skipping frozen module '$ckan'"
         continue
     fi
 
-    ./ckan-validate.py "$ckan"
+    echo "Validating metadata: '$ckan'"
+    # Note: Additional NETKAN_OPTIONS may be set on jenkins jobs
+    OUTPUT=$(mono netkan.exe --validate-ckan "$ckan" $NETKAN_OPTIONS)
+    if (( $? != 0 ))
+    then
+        # Print error and quit
+        echo "$OUTPUT"
+        exit $EXIT_NETKAN_VALIDATION_FAILED
+    fi
     echo ----------------------------------------------
     cat "$ckan"
     echo ----------------------------------------------
-
-    if [[ "$ckan" =~ .frozen$ ]]
-    then
-        echo "Skipping install of frozen module '$ckan'"
-        continue
-    fi
 
     # Extract identifier and KSP version.
     CURRENT_IDENTIFIER=$($JQ_PATH --raw-output '.identifier' "$ckan")
