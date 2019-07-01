@@ -9,15 +9,12 @@ shopt -s nullglob
 LATEST_CKAN_URL="http://ckan-travis.s3.amazonaws.com/ckan.exe"
 LATEST_NETKAN_URL="http://ckan-travis.s3.amazonaws.com/netkan.exe"
 LATEST_CKAN_META="https://github.com/KSP-CKAN/CKAN-meta/archive/master.tar.gz"
-LATEST_CKAN_VALIDATE="https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/bin/ckan-validate.py"
-LATEST_CKAN_SCHEMA="https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/CKAN.schema"
 
 # Third party utilities.
 JQ_PATH="jq"
 
 # Return codes.
 EXIT_OK=0
-EXIT_FAILED_PROVE_STEP=1
 EXIT_FAILED_JSON_VALIDATION=2
 EXIT_FAILED_ROOT_NETKANS=3
 EXIT_FAILED_DUPLICATE_IDENTIFIERS=4
@@ -337,19 +334,6 @@ do
 done
 echo ""
 
-# Run basic tests.
-echo "Running basic sanity tests on metadata."
-echo "If these fail, then fix whatever is causing them first."
-
-if ! prove
-then
-    echo "Prove step failed."
-    exit "$EXIT_FAILED_PROVE_STEP"
-fi
-
-# Find the changes to test.
-echo "Finding changes to test..."
-
 # Print the changes.
 echo "Detected file changes:"
 for f in $COMMIT_CHANGES
@@ -371,11 +355,6 @@ mono ckan.exe version
 echo "Fetching latest netkan.exe"
 wget --quiet "$LATEST_NETKAN_URL" -O netkan.exe
 mono netkan.exe --version
-
-# CKAN Validation files
-wget --quiet "$LATEST_CKAN_VALIDATE" -O ckan-validate.py
-wget --quiet "$LATEST_CKAN_SCHEMA" -O CKAN.schema
-chmod a+x --verbose ckan-validate.py
 
 # Fetch the latest metadata.
 echo "Fetching latest metadata"
@@ -431,9 +410,8 @@ do
     fi
 
     echo "Checking $ckan"
-    ./ckan-validate.py "$ckan"
-    echo "----------------------------------------------"
     echo ""
+    echo "----------------------------------------------"
     cat "$ckan"
     echo "----------------------------------------------"
     echo ""
