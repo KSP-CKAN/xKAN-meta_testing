@@ -321,16 +321,7 @@ do
 
     echo "Validating metadata: '$ckan'"
     # Note: Additional NETKAN_OPTIONS may be set on jenkins jobs
-    OUTPUT=$(mono netkan.exe --validate-ckan "$ckan" $NETKAN_OPTIONS)
-    if (( $? != 0 ))
-    then
-        # Print error and quit
-        echo "$OUTPUT"
-        exit $EXIT_NETKAN_VALIDATION_FAILED
-    fi
-    echo ----------------------------------------------
-    cat "$ckan"
-    echo ----------------------------------------------
+    mono netkan.exe --validate-ckan "$ckan" $NETKAN_OPTIONS
 
     # Extract identifier and KSP version.
     CURRENT_IDENTIFIER=$($JQ_PATH --raw-output '.identifier' "$ckan")
