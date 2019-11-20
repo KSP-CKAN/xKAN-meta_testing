@@ -83,30 +83,32 @@ create_dummy_ksp() {
 
 # ------------------------------------------------
 # Function for injecting metadata into a tar.gz
-# archive. Assummes metadata.tar.gz to be present.
+# archive. Assumes metadata.tar.gz to be present.
 # ------------------------------------------------
-inject_metadata () {
-    # TODO: Arrays + Bash Functions aren't fun. This needs
-    # Improvement but appears to work. The variables are
-    # available to the called functions.
-
+inject_metadata() {
     # Check input, requires at least 1 argument.
-    if [ $# -ne 1 ]
+    if (( $# < 1 ))
     then
         echo "Nothing to inject."
         cp --verbose metadata.tar.gz master.tar.gz
         return 0
     fi
 
+    echo "Injecting into metadata."
+
     # Extract the metadata into a new folder.
     rm -rf CKAN-meta-master
     tar -xzf metadata.tar.gz
 
     # Copy in the files to inject.
-    for f in "${OTHER_FILES[@]}"
+    for f in "$@"
     do
-        echo "Injecting $f"
-        DEST="CKAN-meta-master/$f"
+        echo "Injecting: $f"
+
+        # Find proper destination path
+        ID=$($JQ_PATH --raw-output '.identifier' "$f")
+        DEST="CKAN-meta-master/$ID/$(basename $f)"
+
         mkdir -p --verbose $(dirname "$DEST")
         cp --verbose "$f" "$DEST"
     done
@@ -301,21 +303,30 @@ then
     mkdir --verbose downloads_cache
 fi
 
+# Get all the files
+OTHER_FILES=()
+for o in $COMMIT_CHANGES
+do
+    if [[ "$o" =~ \.ckan$ ]]
+    then
+        OTHER_FILES+=($o)
+    fi
+done
+echo "Files: ${OTHER_FILES[*]}"
+
+# Check if we found any
+if (( ${#OTHER_FILES[@]} > 0 ))
+then
+    # Inject into metadata
+    inject_metadata "${OTHER_FILES[@]}"
+fi
+
 for ckan in $COMMIT_CHANGES
 do
     # set -e doesn't apply inside an if block CKAN#1273
-    if [[ "$ckan" = "build.sh" ]]
+    if ! [[ $ckan =~ \.ckan$ ]]
     then
-        echo "Skipping build script '$ckan'"
-        continue
-    elif [[ "$ckan" = "builds.json" ]]
-    then
-        echo "Skipping remote build map '$ckan'"
-        continue
-    fi
-    if [[ "$ckan" =~ .frozen$ ]]
-    then
-        echo "Skipping frozen module '$ckan'"
+        echo "Skipping non-module '$ckan'"
         continue
     fi
 
@@ -335,21 +346,6 @@ do
 
     echo "Extracted $CURRENT_IDENTIFIER as identifier."
     echo "Extracted ${KSP_VERSIONS[*]} as KSP versions."
-
-    # Get a list of all the OTHER files.
-    OTHER_FILES=()
-
-    for o in $COMMIT_CHANGES
-    do
-        if [ "$ckan" != "$o" ] && [ "$ckan" != "build.sh" ]
-        then
-            OTHER_FILES+=($o)
-        fi
-    done
-    echo "Other files: ${OTHER_FILES[*]}"
-
-    # Inject into metadata.
-    inject_metadata $OTHER_FILES
 
     # Create a dummy KSP install.
     create_dummy_ksp "$ghprbActualCommit" "${KSP_VERSIONS[@]}"
