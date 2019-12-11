@@ -350,21 +350,25 @@ do
     # Create a dummy KSP install.
     create_dummy_ksp "$ghprbActualCommit" "${KSP_VERSIONS[@]}"
 
-    echo "Running ckan update"
-    mono ckan.exe update
+    # Get or restore fresh registry
+    if [[ ! -e registry.json ]]
+    then
+        echo "Running ckan update"
+        mono ckan.exe update
+        echo "Saving fresh registry file"
+        cp --verbose dummy_ksp/CKAN/registry.json .
+    else
+        echo "Restoring saved registry file"
+        cp --verbose registry.json dummy_ksp/CKAN
+    fi
 
     echo Running ckan install -c "$ckan"
-    mono --debug ckan.exe install -c "$ckan" --headless
-
-    # Show all installed mods.
-    echo "Installed mods:"
-    mono --debug ckan.exe list --porcelain
-
-    # Check the installed files for this .ckan file.
-    mono ckan.exe show "$CURRENT_IDENTIFIER"
-
-    # Cleanup.
-    mono ckan.exe ksp forget "$KSP_NAME"
+    mono ckan.exe prompt --headless <<EOCKAN
+install -c $ckan --headless
+list --porcelain
+show $CURRENT_IDENTIFIER
+ksp forget $KSP_NAME
+EOCKAN
 
     # Blank line between files
     echo
