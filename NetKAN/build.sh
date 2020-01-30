@@ -452,15 +452,6 @@ show $CURRENT_IDENTIFIER
 ksp forget $KSP_NAME
 EOCKAN
 
-    # Check for Installations that have gone wrong.
-    gamedata=($(find dummy_ksp/GameData/. -name GameData -exec sh -c 'if test -d "{}"; then echo "{}";fi' \;))
-    if (( ${#gamedata[@]} > 0 ))
-    then
-      echo "GameData directory found within GameData"
-      printf '%s\n' "Path: ${gamedata[@]}"
-      exit 1;
-    fi
-
     # Blank line between files
     echo
 done
