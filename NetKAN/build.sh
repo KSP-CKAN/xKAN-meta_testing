@@ -368,6 +368,9 @@ else
     KSP_NAME="$ghprbActualCommit"
 fi
 
+# Blank line before netkans
+echo
+
 # Build all the passed .netkan files.
 # Note: Additional NETKAN_OPTIONS may be set on jenkins jobs
 for f in $COMMIT_CHANGES
@@ -388,6 +391,8 @@ do
     else
         echo "Let's try not to build '$f' with netkan"
     fi
+    # Blank line after each netkan
+    echo
 done
 
 # Get array of all the files
