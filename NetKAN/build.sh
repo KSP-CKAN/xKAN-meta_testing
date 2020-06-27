@@ -6,8 +6,8 @@ set -e
 shopt -s nullglob
 
 # Locations of CKAN and NetKAN.
-LATEST_CKAN_URL="http://ckan-travis.s3.amazonaws.com/ckan.exe"
-LATEST_NETKAN_URL="http://ckan-travis.s3.amazonaws.com/netkan.exe"
+LATEST_CKAN_URL="https://ksp-ckan.s3-us-west-2.amazonaws.com/ckan.exe"
+LATEST_NETKAN_URL="https://ksp-ckan.s3-us-west-2.amazonaws.com/netkan.exe"
 LATEST_CKAN_META="https://github.com/KSP-CKAN/CKAN-meta/archive/master.tar.gz"
 
 # Third party utilities.
