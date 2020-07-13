@@ -14,6 +14,7 @@ JQ_PATH="jq"
 EXIT_OK=0
 EXIT_NETKAN_VALIDATION_FAILED=2
 EXIT_FAILED_NO_GAME_VERSION=5
+EXIT_FAILED_NETKAN_IN_CKANMETA=6
 
 # Allow us to specify a commit id as the first argument
 if [ -n "$1" ]
@@ -323,6 +324,11 @@ fi
 
 for ckan in $COMMIT_CHANGES
 do
+    if [[ $ckan =~ \.netkan$ ]]
+    then
+        echo ".netkan file $ckan found, this repo is for .ckan files"
+        exit "$EXIT_FAILED_NETKAN_IN_CKANMETA"
+    fi
     # set -e doesn't apply inside an if block CKAN#1273
     if ! [[ $ckan =~ \.ckan$ ]]
     then
