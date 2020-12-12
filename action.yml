@@ -1,0 +1,37 @@
+name: CKAN Metadata Tester
+description: Inflates netkans and validates ckans
+author:
+    - techman83
+    - HebaruSan
+inputs:
+
+    log level:
+        description: >
+            How verbose to be:
+            debug    - Print everything, including low level stuff
+            info     - Print basic progress messages (default)
+            warn     - Only print when there might be a problem
+            error    - Only print when there's definitely a problem
+            critical - Only print when it's game over, man
+        required: false
+        default: info
+
+    source:
+        description: >
+            What to test:
+            netkans - Test all .netkan files in repo, intended for meta-netkans in mod repos (default)
+            commits - Test .netkan and/or .ckan files modified by the commits between master and HEAD, intended for NetKAN and CKAN-meta repos
+        required: false
+        default: netkans
+
+    pull request body:
+        description: >
+            The body of the pull request associated with these changes.
+            Used to extract game version compatibility overrides a la:
+            `ckan compat add 1.8 1.9`
+            If it contains #overwrite_cache, cached files will be re-downloaded.
+        required: false
+
+runs:
+    using: docker
+    image: Dockerfile
