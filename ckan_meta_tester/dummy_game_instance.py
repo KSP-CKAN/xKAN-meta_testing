@@ -10,7 +10,7 @@ from .game_version import GameVersion
 
 class DummyGameInstance:
 
-    SAVED_REGISTRY=Path('/cache/registry.json')
+    SAVED_REGISTRY=Path('/tmp/registry.json')
     MAKING_HISTORY_VERSION=GameVersion('1.4.1')
     BREAKING_GROUND_VERSION=GameVersion('1.7.1')
 
