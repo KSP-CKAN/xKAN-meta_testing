@@ -1,0 +1,9 @@
+version: "3.7"
+
+services:
+  cmt:
+    build:
+      context: ../.
+    volumes:
+      - ../.:/workspace
+    entrypoint: sleep infinity
