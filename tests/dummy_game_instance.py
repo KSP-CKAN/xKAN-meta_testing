@@ -45,7 +45,7 @@ class TestDummyGameInstance(TestCase):
         ])
         self.assertEqual(mocked_copy.mock_calls, [
             call(PosixPath('/game-instance/CKAN/registry.json'),
-                 PosixPath('/cache/registry.json'))
+                 PosixPath('/tmp/registry.json'))
         ])
         self.assertEqual(mocked_rmtree.mock_calls, [
             call(PosixPath('/game-instance'))
