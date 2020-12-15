@@ -19,7 +19,7 @@ class TestLogGroup(TestCase):
         hdr  = 'Test Header'
         body = 'Test body\nLine 2'
 
-        # Arrange / Act
+        # Act
         str = self.use_log_group(hdr, body)
 
         # Assert

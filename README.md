@@ -115,6 +115,10 @@ jobs:
                   pull request body: ${{ github.event.pull_request.body }}
 ```
 
+## See also
+
+Validate your KSP-AVC .version files with https://github.com/DasSkelett/AVC-VersionFileValidator !
+
 ## Contributions
 
 - Leon Wright
