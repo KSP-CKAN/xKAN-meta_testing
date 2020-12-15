@@ -30,15 +30,26 @@ class GameVersion:
         return minv <= self <= maxv
 
     def __le__(self, other: 'GameVersion') -> bool:
+        if self._piece_lt(self.major, other.major):
+            return True
         if not self._piece_le(self.major, other.major):
             return False
+        if self._piece_lt(self.minor, other.minor):
+            return True
         if not self._piece_le(self.minor, other.minor):
             return False
+        if self._piece_lt(self.patch, other.patch):
+            return True
         if not self._piece_le(self.patch, other.patch):
             return False
+        if self._piece_lt(self.build, other.build):
+            return True
         if not self._piece_le(self.build, other.build):
             return False
         return True
+
+    def _piece_lt(slef, a: Optional[int], b: Optional[int]) -> bool:
+        return a is not None and b is not None and a < b
 
     def _piece_le(self, a: Optional[int], b: Optional[int]) -> bool:
         return a is None or b is None or a <= b
