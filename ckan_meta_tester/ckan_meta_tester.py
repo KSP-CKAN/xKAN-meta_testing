@@ -170,7 +170,7 @@ class CkanMetaTester:
         for var in self.REF_ENV_VARS:
             val = environ.get(var)
             logging.debug('Ref env var %s is %s', var, val)
-            if val:
+            if val and not ref:
                 ref = val
                 if stop_early:
                     # Print all the vars in debug mode
