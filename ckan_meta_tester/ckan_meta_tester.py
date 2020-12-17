@@ -24,7 +24,7 @@ class CkanMetaTester:
     CKAN_PATH   = BIN_PATH.joinpath('ckan.exe')
 
     INFLATED_PATH = Path('/ckans')
-    CACHE_PATH    = Path('/cache')
+    CACHE_PATH    = Path('.cache')
     REPO_PATH     = Path('/repo')
     TINY_REPO     = REPO_PATH.joinpath('metadata.tar.gz')
 
@@ -51,6 +51,9 @@ class CkanMetaTester:
         # (which will save it to the persistent cache)
         overwrite_cache = ('#overwrite_cache' in pr_body)
         logging.debug('overwrite_cache: %s', overwrite_cache)
+
+        if not self.CACHE_PATH.exists():
+            self.CACHE_PATH.mkdir()
 
         for file in self.files_to_test(source):
             if not self.test_file(file, overwrite_cache, github_token):
