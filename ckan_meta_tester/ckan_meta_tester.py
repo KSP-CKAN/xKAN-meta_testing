@@ -91,20 +91,22 @@ class CkanMetaTester:
             raise ValueError(f'Cannot test file {file}, must be .netkan or .ckan')
 
     def inflate_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None) -> bool:
-        logging.info('Inflating %s', file)
-        if not self.run_for_file(
-            file,
-            ['mono', self.NETKAN_PATH,
-             *(['--github-token', github_token] if github_token is not None else []),
-             '--cachedir', self.CACHE_PATH,
-             *(['--overwrite-cache'] if overwrite_cache else []),
-             '--outputdir', self.INFLATED_PATH,
-             file]):
-            return False
-        # Netkan doesn't tell us the created file name,
-        # so hope the newest file is it
-        self.source_to_ckan[file] = max(self.INFLATED_PATH.rglob('*.ckan'),
-                                        key=lambda p: p.stat().st_mtime)
+        with LogGroup(f'Inflating {file}'):
+            if not self.run_for_file(
+                file,
+                ['mono', self.NETKAN_PATH,
+                 *(['--github-token', github_token] if github_token is not None else []),
+                 '--cachedir', self.CACHE_PATH,
+                 *(['--overwrite-cache'] if overwrite_cache else []),
+                 '--outputdir', self.INFLATED_PATH,
+                 file]):
+                return False
+            # Netkan doesn't tell us the created file name,
+            # so hope the newest file is it
+            newest_file = max(self.INFLATED_PATH.rglob('*.ckan'),
+                              key=lambda p: p.stat().st_mtime)
+            self.source_to_ckan[file] = newest_file
+            print(newest_file.read_text())
         return True
 
     def validate_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None) -> bool:
