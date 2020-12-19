@@ -10,7 +10,7 @@ def test_metadata() -> None:
     logging.getLogger('').setLevel(
         environ.get('INPUT_LOG_LEVEL', 'info').upper())
 
-    ex = CkanMetaTester()
+    ex = CkanMetaTester(environ.get('GITHUB_ACTOR') == 'netkan-bot')
     exit(ExitStatus.success
          if ex.test_metadata(environ.get('INPUT_SOURCE',            'netkans'),
                              environ.get('INPUT_PULL_REQUEST_BODY', ''),

@@ -38,9 +38,10 @@ class CkanMetaTester:
         'GITHUB_EVENT_BEFORE'
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, i_am_the_bot: bool) -> None:
         self.source_to_ckan: Dict[Path, Path] = {}
         self.failed = False
+        self.i_am_the_bot = i_am_the_bot
 
     def test_metadata(self, source: str = 'netkans', pr_body: str = '', github_token: Optional[str] = None) -> bool:
 
@@ -221,7 +222,8 @@ class CkanMetaTester:
                 print(f'::error file={file}::{file.stem} is frozen, unfreeze it by renaming or deleting {frozen}', flush=True)
                 return False
         elif file.suffix == '.ckan':
-            print(f'::warning file={file}::Usually we should trust the bot to create .ckan files, are you sure you know what you\'re doing?')
+            if not self.i_am_the_bot:
+                print(f'::warning file={file}::Usually we should trust the bot to create .ckan files, are you sure you know what you\'re doing?')
             if len(file.parts) != 2:
                 print(f'::error file={file}::{file} should be placed in the folder named after its mod\'s identifier')
                 return False
