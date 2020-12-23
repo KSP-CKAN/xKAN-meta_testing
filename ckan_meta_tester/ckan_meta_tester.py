@@ -251,7 +251,7 @@ class CkanMetaTester:
             if full_output_as_error:
                 # This is the crazy method for putting newlines into ::error
                 full_output += line.replace('\n', '%0A')
-            if ' ERROR ' in line:
+            if ' ERROR ' in line or ' FATAL ' in line:
                 print(f'::error file={file}::{line}', flush=True, end='')
             elif ' WARN ' in line:
                 print(f'::warning file={file}::{line}', flush=True, end='')
