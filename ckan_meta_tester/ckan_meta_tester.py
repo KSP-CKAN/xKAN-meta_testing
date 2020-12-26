@@ -72,7 +72,8 @@ class CkanMetaTester:
         # Make secondary repo file with our generated .ckans
         run(['tar', 'czf', self.TINY_REPO, '-C', self.INFLATED_PATH, '.'])
 
-        meta_repo = None if diff_meta_root is None else CkanMetaRepo(Repo(Path(diff_meta_root)))
+        # Action inputs are apparently '' rather than None if not set in the yml
+        meta_repo = CkanMetaRepo(Repo(Path(diff_meta_root))) if diff_meta_root else None
         for orig_file, file in self.source_to_ckan.items():
             if not self.install_ckan(file, orig_file, pr_body, meta_repo):
                 logging.error('Install of %s failed!', file)
