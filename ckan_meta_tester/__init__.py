@@ -14,5 +14,6 @@ def test_metadata() -> None:
     exit(ExitStatus.success
          if ex.test_metadata(environ.get('INPUT_SOURCE',            'netkans'),
                              environ.get('INPUT_PULL_REQUEST_BODY', ''),
-                             environ.get('GITHUB_TOKEN'))
+                             environ.get('GITHUB_TOKEN'),
+                             environ.get('INPUT_DIFF_META_ROOT'))
          else ExitStatus.failure)
