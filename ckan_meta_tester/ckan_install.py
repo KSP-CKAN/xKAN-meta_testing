@@ -2,9 +2,11 @@ import re
 import requests
 import logging
 from collections import OrderedDict
-from typing import List
+from difflib import unified_diff
+from typing import List, Optional
 
 from netkan.metadata import Ckan
+from netkan.repos import CkanMetaRepo
 
 from .game_version import GameVersion
 
@@ -44,3 +46,12 @@ class CkanInstall(Ckan):
                 return GameVersion(self.ksp_version)
             except AttributeError:
                 return GameVersion('any')
+
+    def find_diff(self, meta_repo: CkanMetaRepo) -> Optional[str]:
+        ckans = [ck for ck in meta_repo.ckans(self.identifier)
+                 if ck.version == self.version]
+        return None if len(ckans) != 1 else ''.join(
+            unified_diff(ckans[0].contents.splitlines(True),
+                         self.contents.splitlines(True),
+                         fromfile=f'Previous {self.name} {self.version}',
+                         tofile=f'New {self.name} {self.version}'))

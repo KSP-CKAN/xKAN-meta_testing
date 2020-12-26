@@ -32,6 +32,13 @@ inputs:
             If it contains #overwrite_cache, cached files will be re-downloaded.
         required: false
 
+    diff meta root:
+        description: >
+            Path to location of local clone of CKAN-meta repo. If passed, each inflated .ckan
+            file will be diffed against the .ckan file with matching identifier and version
+            in the repo. Intended for NetKAN repo and mod meta-netkans.
+        required: false
+
 runs:
     using: docker
     image: Dockerfile

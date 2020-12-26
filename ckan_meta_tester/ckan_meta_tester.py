@@ -10,6 +10,8 @@ from string import Template
 from exitstatus import ExitStatus
 from typing import Optional, Iterable, Set, List, Any, Dict, Tuple
 
+from netkan.repos import CkanMetaRepo
+
 from .ckan_install import CkanInstall
 from .game_version import GameVersion
 from .dummy_game_instance import DummyGameInstance
@@ -43,7 +45,7 @@ class CkanMetaTester:
         self.failed = False
         self.i_am_the_bot = i_am_the_bot
 
-    def test_metadata(self, source: str = 'netkans', pr_body: str = '', github_token: Optional[str] = None) -> bool:
+    def test_metadata(self, source: str = 'netkans', pr_body: str = '', github_token: Optional[str] = None, diff_meta_root: Optional[str] = None) -> bool:
 
         logging.debug('Starting metadata test')
         logging.debug('Builds: %s', [str(v) for v in CkanInstall.KNOWN_VERSIONS])
@@ -70,8 +72,9 @@ class CkanMetaTester:
         # Make secondary repo file with our generated .ckans
         run(['tar', 'czf', self.TINY_REPO, '-C', self.INFLATED_PATH, '.'])
 
+        meta_repo = None if diff_meta_root is None else CkanMetaRepo(Repo(Path(diff_meta_root)))
         for orig_file, file in self.source_to_ckan.items():
-            if not self.install_ckan(file, orig_file, pr_body):
+            if not self.install_ckan(file, orig_file, pr_body, meta_repo):
                 logging.error('Install of %s failed!', file)
                 self.failed = True
 
@@ -124,8 +127,13 @@ class CkanMetaTester:
             self.source_to_ckan[file] = self.INFLATED_PATH.joinpath(file.name)
             return True
 
-    def install_ckan(self, file: Path, orig_file: Path, pr_body: Optional[str]) -> bool:
+    def install_ckan(self, file: Path, orig_file: Path, pr_body: Optional[str], meta_repo: Optional[CkanMetaRepo]) -> bool:
         ckan = CkanInstall(file)
+        if meta_repo is not None:
+            diff = ckan.find_diff(meta_repo)
+            if diff is not None:
+                with LogGroup(f'Diffing {ckan.name} {ckan.version}'):
+                    print(diff, end='', flush=True)
         with LogGroup(f'Installing {ckan.name} {ckan.version}'):
             versions = [*self.pr_body_versions(pr_body),
                         *ckan.compat_versions()]
