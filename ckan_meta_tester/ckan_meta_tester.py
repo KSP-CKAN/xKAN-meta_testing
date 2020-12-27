@@ -258,8 +258,7 @@ class CkanMetaTester:
         full_output = ''
         for line in iter(p.stdout.readline, ''):
             if full_output_as_error:
-                # This is the crazy method for putting newlines into ::error
-                full_output += line.replace('\n', '%0A')
+                full_output += line
             elif ' ERROR ' in line or ' FATAL ' in line:
                 print(f'::error file={file}::{line}', flush=True, end='')
             elif ' WARN ' in line:
@@ -272,5 +271,7 @@ class CkanMetaTester:
             return True
         else:
             if full_output_as_error:
+                # This is the crazy method for putting newlines into ::error
+                full_output = full_output.replace('\n', '%0A')
                 print(f'::error file={file}::{full_output}', flush=True)
             return False
