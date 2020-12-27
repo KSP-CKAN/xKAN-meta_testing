@@ -84,7 +84,7 @@ class CkanMetaTester:
     def test_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None) -> bool:
         logging.debug('Attempting jsonlint for %s', file)
         if not self.run_for_file(
-            file, ['jsonlint-php', file], full_output_as_error=True):
+            file, ['jsonlint', '-s', '-v', file], full_output_as_error=True):
             logging.debug('jsonlint failed for %s', file)
             return False
         suffix = file.suffix.lower()
@@ -260,15 +260,17 @@ class CkanMetaTester:
             if full_output_as_error:
                 # This is the crazy method for putting newlines into ::error
                 full_output += line.replace('\n', '%0A')
-            if ' ERROR ' in line or ' FATAL ' in line:
+            elif ' ERROR ' in line or ' FATAL ' in line:
                 print(f'::error file={file}::{line}', flush=True, end='')
             elif ' WARN ' in line:
                 print(f'::warning file={file}::{line}', flush=True, end='')
             else:
                 print(line, flush=True, end='')
         if p.wait() == ExitStatus.success:
+            if full_output_as_error:
+                print(full_output, flush=True)
             return True
         else:
             if full_output_as_error:
-                print(f'::error file={file}::{full_output}', flush=True, end='')
+                print(f'::error file={file}::{full_output}', flush=True)
             return False

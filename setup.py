@@ -21,6 +21,7 @@ setup(
         'gitpython',
         'exitstatus',
         'requests',
+        'demjson',
     ],
     extras_require={
         'development': [
