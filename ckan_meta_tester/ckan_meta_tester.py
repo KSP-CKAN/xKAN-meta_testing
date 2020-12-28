@@ -104,7 +104,7 @@ class CkanMetaTester:
                 ['mono', self.NETKAN_PATH,
                  *(['--github-token', github_token] if github_token is not None else []),
                  '--cachedir', self.CACHE_PATH,
-                 *(['--highest-version', high_ver] if high_ver else []),
+                 *(['--highest-version', str(high_ver)] if high_ver else []),
                  *(['--overwrite-cache'] if overwrite_cache else []),
                  '--outputdir', self.INFLATED_PATH,
                  file]):
