@@ -58,8 +58,11 @@ class CkanMetaTester:
         if not self.CACHE_PATH.exists():
             self.CACHE_PATH.mkdir()
 
+        # Action inputs are apparently '' rather than None if not set in the yml
+        meta_repo = CkanMetaRepo(Repo(Path(diff_meta_root))) if diff_meta_root else None
+
         for file in self.files_to_test(source):
-            if not self.test_file(file, overwrite_cache, github_token):
+            if not self.test_file(file, overwrite_cache, github_token, meta_repo):
                 logging.error('Test of %s failed!', file)
                 self.failed = True
         if self.failed:
@@ -72,8 +75,6 @@ class CkanMetaTester:
         # Make secondary repo file with our generated .ckans
         run(['tar', 'czf', self.TINY_REPO, '-C', self.INFLATED_PATH, '.'])
 
-        # Action inputs are apparently '' rather than None if not set in the yml
-        meta_repo = CkanMetaRepo(Repo(Path(diff_meta_root))) if diff_meta_root else None
         for orig_file, file in self.source_to_ckan.items():
             if not self.install_ckan(file, orig_file, pr_body, meta_repo):
                 logging.error('Install of %s failed!', file)
@@ -81,7 +82,7 @@ class CkanMetaTester:
 
         return not self.failed
 
-    def test_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None) -> bool:
+    def test_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None, meta_repo: Optional[CkanMetaRepo] = None) -> bool:
         logging.debug('Attempting jsonlint for %s', file)
         if not self.run_for_file(
             file, ['jsonlint', '-s', '-v', file], full_output_as_error=True):
@@ -89,19 +90,21 @@ class CkanMetaTester:
             return False
         suffix = file.suffix.lower()
         if suffix == '.netkan':
-            return self.inflate_file(file, overwrite_cache, github_token)
+            return self.inflate_file(file, overwrite_cache, github_token, meta_repo)
         elif suffix == '.ckan':
             return self.validate_file(file, overwrite_cache, github_token)
         else:
             raise ValueError(f'Cannot test file {file}, must be .netkan or .ckan')
 
-    def inflate_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None) -> bool:
+    def inflate_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None, meta_repo: Optional[CkanMetaRepo] = None) -> bool:
+        high_ver = meta_repo.highest_version(file.stem) if meta_repo else None
         with LogGroup(f'Inflating {file}'):
             if not self.run_for_file(
                 file,
                 ['mono', self.NETKAN_PATH,
                  *(['--github-token', github_token] if github_token is not None else []),
                  '--cachedir', self.CACHE_PATH,
+                 *(['--highest-version', high_ver] if high_ver else []),
                  *(['--overwrite-cache'] if overwrite_cache else []),
                  '--outputdir', self.INFLATED_PATH,
                  file]):
