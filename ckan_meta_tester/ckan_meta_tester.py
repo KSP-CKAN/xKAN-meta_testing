@@ -2,7 +2,7 @@ import re
 from os import environ
 from shutil import copy
 import logging
-from git import Repo, Commit
+from git import Repo, Commit, DiffIndex
 from subprocess import run, Popen, PIPE, STDOUT
 from pathlib import Path
 from importlib.resources import read_text
@@ -170,7 +170,7 @@ class CkanMetaTester:
         elif source == 'netkans':
             return self.netkans()
         elif source == 'commits':
-            return self.paths_from_commits(self.branch_commits(Repo('.')))
+            return self.paths_from_diff(self.branch_diff(Repo('.')))
         else:
             raise ValueError(f'Source {source} is not valid, must be netkans or commits')
 
@@ -179,8 +179,8 @@ class CkanMetaTester:
         return (f for f in Path().rglob('*')
                 if f.is_file() and f.suffix.lower() == '.netkan')
 
-    def branch_commits(self, repo: Repo) -> Iterable[Commit]:
-        return repo.iter_commits(f'{self.get_start_ref()}..{repo.head}')
+    def branch_diff(self, repo: Repo) -> DiffIndex:
+        return repo.commit(self.get_start_ref()).diff(repo.head.commit)
 
     def get_start_ref(self, default: str = 'origin/master') -> str:
         ref = None
@@ -195,14 +195,9 @@ class CkanMetaTester:
                     break
         return ref if ref is not None else default
 
-    def paths_from_commits(self, commits: Iterable[Commit]) -> Iterable[Path]:
-        logging.debug('Searching commits for changed files')
-        all_adds: Set[str] = set()
-        all_mods: Set[str] = set()
-        for commit in commits:
-            added, modified = self.filenames_from_commit(commit)
-            all_adds |= added
-            all_mods |= modified
+    def paths_from_diff(self, diff: DiffIndex) -> Iterable[Path]:
+        logging.debug('Searching diff for changed files')
+        all_adds, all_mods = self.filenames_from_diff(diff)
         # Existing files probably have valid names, new ones need to be checked
         for f in all_adds:
             if not self.check_added_path(Path(f)):
@@ -210,12 +205,10 @@ class CkanMetaTester:
         files = all_adds | all_mods
         return (Path(f) for f in files if self.netkan_or_ckan(f))
 
-    def filenames_from_commit(self, commit: Commit) -> Tuple[Set[str], Set[str]]:
-        logging.debug('Checking commit %s for changed files', commit.hexsha)
-        changes  = commit.parents[0].diff(commit)
-        added    = {ch.b_path for ch in changes.iter_change_type('A')}
-        modified = {ch.b_path for ch in changes.iter_change_type('M')}
-        renamed  = {ch.b_path for ch in changes.iter_change_type('R')}
+    def filenames_from_diff(self, diff: DiffIndex) -> Tuple[Set[str], Set[str]]:
+        added    = {ch.b_path for ch in diff.iter_change_type('A')}
+        modified = {ch.b_path for ch in diff.iter_change_type('M')}
+        renamed  = {ch.b_path for ch in diff.iter_change_type('R')}
         logging.debug('%s added, %s modified, %s renamed',
             len(added), len(modified), len(renamed))
         return added, modified | renamed
