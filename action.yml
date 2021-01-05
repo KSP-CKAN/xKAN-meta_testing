@@ -6,7 +6,7 @@ author:
 inputs:
 
     log level:
-        description: >
+        description: |-
             How verbose to be:
             debug    - Print everything, including low level stuff
             info     - Print basic progress messages (default)
@@ -17,7 +17,7 @@ inputs:
         default: info
 
     source:
-        description: >
+        description: |-
             What to test:
             netkans - Test all .netkan files in repo, intended for meta-netkans in mod repos (default)
             commits - Test .netkan and/or .ckan files modified by the commits between master and HEAD, intended for NetKAN and CKAN-meta repos
@@ -25,7 +25,7 @@ inputs:
         default: netkans
 
     pull request body:
-        description: >
+        description: >-
             The body of the pull request associated with these changes.
             Used to extract game version compatibility overrides a la:
             `ckan compat add 1.8 1.9`
@@ -33,7 +33,7 @@ inputs:
         required: false
 
     diff meta root:
-        description: >
+        description: >-
             Path to location of local clone of CKAN-meta repo. If passed, each inflated .ckan
             file will be diffed against the .ckan file with matching identifier and version
             in the repo. Intended for NetKAN repo and mod meta-netkans.
