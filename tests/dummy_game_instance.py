@@ -51,7 +51,7 @@ class TestDummyGameInstance(TestCase):
             call(PosixPath('/game-instance'))
         ])
         self.assertEqual(mocked_run.mock_calls, [
-            call(['mono', PosixPath('/ckan.exe'), 'ksp', 'fake',
+            call(['mono', PosixPath('/ckan.exe'), 'instance', 'fake',
                   '--set-default', '--headless', 'dummy',
                   PosixPath('/game-instance'), '1.8.1',
                   '--MakingHistory', '1.1.0', '--BreakingGround', '1.0.0'],
@@ -63,6 +63,6 @@ class TestDummyGameInstance(TestCase):
                  capture_output=True),
             call(['mono', PosixPath('/ckan.exe'), 'update'],
                  capture_output=True),
-            call(['mono', PosixPath('/ckan.exe'), 'ksp', 'forget', 'dummy'],
+            call(['mono', PosixPath('/ckan.exe'), 'instance', 'forget', 'dummy'],
                  capture_output=True)
         ])
