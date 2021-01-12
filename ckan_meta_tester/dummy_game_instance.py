@@ -30,7 +30,7 @@ class DummyGameInstance:
         self.where.mkdir()
         logging.debug('Populating fake instance contents')
         run(['mono', self.ckan_exe,
-             'ksp', 'fake',
+             'instance', 'fake',
              '--set-default', '--headless',
              'dummy', self.where, str(self.main_ver),
              *self._available_dlcs(self.main_ver)], capture_output=self.capture)
@@ -61,7 +61,7 @@ class DummyGameInstance:
     def __exit__(self, exc_type: Type[BaseException],
                  exc_value: BaseException, traceback: TracebackType) -> None:
         logging.debug('Removing instance from CKAN instance list')
-        run(['mono', self.ckan_exe, 'ksp', 'forget', 'dummy'], capture_output=self.capture)
+        run(['mono', self.ckan_exe, 'instance', 'forget', 'dummy'], capture_output=self.capture)
         logging.debug('Deleting instance contents')
         rmtree(self.where)
         logging.info('Dummy game instance deleted')
