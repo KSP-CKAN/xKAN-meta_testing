@@ -9,6 +9,7 @@ from importlib.resources import read_text
 from string import Template
 from exitstatus import ExitStatus
 from typing import Optional, Iterable, Set, List, Any, Dict, Tuple
+from collections import OrderedDict
 
 from netkan.repos import CkanMetaRepo
 
@@ -41,7 +42,7 @@ class CkanMetaTester:
     ]
 
     def __init__(self, i_am_the_bot: bool) -> None:
-        self.source_to_ckan: Dict[Path, Path] = {}
+        self.source_to_ckan: OrderedDict[Path, Path] = OrderedDict()
         self.failed = False
         self.i_am_the_bot = i_am_the_bot
 
