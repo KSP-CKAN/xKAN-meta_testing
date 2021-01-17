@@ -203,7 +203,7 @@ class CkanMetaTester:
         for f in all_adds:
             if not self.check_added_path(Path(f)):
                 self.failed = True
-        files = all_adds | all_mods
+        files = sorted(all_adds | all_mods)
         return (Path(f) for f in files if self.netkan_or_ckan(f))
 
     def filenames_from_diff(self, diff: DiffIndex) -> Tuple[Set[str], Set[str]]:
