@@ -58,6 +58,7 @@ class TestDummyGameInstance(TestCase):
                  capture_output=True),
             call(['mono', PosixPath('/ckan.exe'), 'compat', 'add', '1.8.0'],
                  capture_output=True),
+            call(['mono', PosixPath('/ckan.exe'), 'cache', 'set', PosixPath('/cache'), '--headless']),
             call(['mono', PosixPath('/ckan.exe'), 'repo', 'add',
                   'local', 'file:///repo/metadata.tar.gz'],
                  capture_output=True),
