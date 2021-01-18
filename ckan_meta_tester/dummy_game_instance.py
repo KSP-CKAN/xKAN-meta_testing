@@ -38,6 +38,7 @@ class DummyGameInstance:
             logging.debug('Setting version %s compatible', ver)
             run(['mono', self.ckan_exe, 'compat', 'add', str(ver)], capture_output=self.capture)
         self.where.joinpath('CKAN').joinpath('downloads').symlink_to(self.cache_path.absolute())
+        run(['mono', self.ckan_exe, 'cache', 'set', self.cache_path.absolute(), '--headless'])
         logging.debug('Adding repo %s', self.addl_repo.as_uri())
         run(['mono', self.ckan_exe, 'repo', 'add', 'local', self.addl_repo.as_uri()],
             capture_output=self.capture)
