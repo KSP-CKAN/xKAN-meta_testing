@@ -116,7 +116,7 @@ class CkanMetaTester:
                      '--outputdir', temppath,
                      file]):
                     return False
-                ckans = temppath.rglob('*.ckan')
+                ckans = list(temppath.rglob('*.ckan'))
                 for ckan in ckans:
                     print(f'{ckan.name}:')
                     print(ckan.read_text())
