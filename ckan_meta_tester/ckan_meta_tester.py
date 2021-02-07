@@ -10,6 +10,7 @@ from string import Template
 from exitstatus import ExitStatus
 from typing import Optional, Iterable, Set, List, Any, Dict, Tuple
 from collections import OrderedDict
+from tempfile import TemporaryDirectory
 
 from netkan.repos import CkanMetaRepo
 
@@ -42,7 +43,7 @@ class CkanMetaTester:
     ]
 
     def __init__(self, i_am_the_bot: bool) -> None:
-        self.source_to_ckan: OrderedDict[Path, Path] = OrderedDict()
+        self.source_to_ckans: OrderedDict[Path, List[Path]] = OrderedDict()
         self.failed = False
         self.i_am_the_bot = i_am_the_bot
 
@@ -69,17 +70,18 @@ class CkanMetaTester:
         if self.failed:
             return False
 
-        if len(self.source_to_ckan) == 0:
+        if len(self.source_to_ckans) == 0:
             logging.info('No .ckans found, done.')
             return True
 
         # Make secondary repo file with our generated .ckans
         run(['tar', 'czf', self.TINY_REPO, '-C', self.INFLATED_PATH, '.'])
 
-        for orig_file, file in self.source_to_ckan.items():
-            if not self.install_ckan(file, orig_file, pr_body, meta_repo):
-                logging.error('Install of %s failed!', file)
-                self.failed = True
+        for orig_file, files in self.source_to_ckans.items():
+            for file in files:
+                if not self.install_ckan(file, orig_file, pr_body, meta_repo):
+                    logging.error('Install of %s failed!', file)
+                    self.failed = True
 
         return not self.failed
 
@@ -100,22 +102,25 @@ class CkanMetaTester:
     def inflate_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None, meta_repo: Optional[CkanMetaRepo] = None) -> bool:
         high_ver = meta_repo.highest_version(file.stem) if meta_repo else None
         with LogGroup(f'Inflating {file}'):
-            if not self.run_for_file(
-                file,
-                ['mono', self.NETKAN_PATH,
-                 *(['--github-token', github_token] if github_token is not None else []),
-                 '--cachedir', self.CACHE_PATH,
-                 *(['--highest-version', str(high_ver)] if high_ver else []),
-                 *(['--overwrite-cache'] if overwrite_cache else []),
-                 '--outputdir', self.INFLATED_PATH,
-                 file]):
-                return False
-            # Netkan doesn't tell us the created file name,
-            # so hope the newest file is it
-            newest_file = max(self.INFLATED_PATH.rglob('*.ckan'),
-                              key=lambda p: p.stat().st_mtime)
-            self.source_to_ckan[file] = newest_file
-            print(newest_file.read_text())
+            with TemporaryDirectory() as tempdirname:
+                temppath = Path(tempdirname)
+                if not self.run_for_file(
+                    file,
+                    ['mono', self.NETKAN_PATH,
+                     *(['--github-token', github_token] if github_token is not None else []),
+                     '--cachedir', self.CACHE_PATH,
+                     *(['--highest-version', str(high_ver)] if high_ver else []),
+                     *(['--overwrite-cache'] if overwrite_cache else []),
+                     '--outputdir', temppath,
+                     file]):
+                    return False
+                ckans = temppath.rglob('*.ckan')
+                for ckan in ckans:
+                    print(f'{ckan.name}:')
+                    print(ckan.read_text())
+                    copy(ckan, self.INFLATED_PATH)
+                self.source_to_ckans[file] = [self.INFLATED_PATH.joinpath(ckan.name)
+                                              for ckan in ckans]
         return True
 
     def validate_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None) -> bool:
@@ -129,7 +134,7 @@ class CkanMetaTester:
                  '--validate-ckan', file]):
                 return False
             copy(file, self.INFLATED_PATH)
-            self.source_to_ckan[file] = self.INFLATED_PATH.joinpath(file.name)
+            self.source_to_ckans[file] = [self.INFLATED_PATH.joinpath(file.name)]
             return True
 
     def install_ckan(self, file: Path, orig_file: Path, pr_body: Optional[str], meta_repo: Optional[CkanMetaRepo]) -> bool:
