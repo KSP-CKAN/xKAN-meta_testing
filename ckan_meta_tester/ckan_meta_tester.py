@@ -78,6 +78,7 @@ class CkanMetaTester:
         run(['tar', 'czf', self.TINY_REPO, '-C', self.INFLATED_PATH, '.'])
 
         for orig_file, files in self.source_to_ckans.items():
+            logging.debug('Installing files for %s: %s', orig_file, files)
             for file in files:
                 if not self.install_ckan(file, orig_file, pr_body, meta_repo):
                     logging.error('Install of %s failed!', file)
@@ -104,6 +105,7 @@ class CkanMetaTester:
         with LogGroup(f'Inflating {file}'):
             with TemporaryDirectory() as tempdirname:
                 temppath = Path(tempdirname)
+                logging.debug('Inflating into %s', temppath)
                 if not self.run_for_file(
                     file,
                     ['mono', self.NETKAN_PATH,
@@ -118,9 +120,11 @@ class CkanMetaTester:
                 for ckan in ckans:
                     print(f'{ckan.name}:')
                     print(ckan.read_text())
+                    logging.debug('Copying %s to %s', ckan, self.INFLATED_PATH)
                     copy(ckan, self.INFLATED_PATH)
                 self.source_to_ckans[file] = [self.INFLATED_PATH.joinpath(ckan.name)
                                               for ckan in ckans]
+                logging.debug('Files generated: %s', self.source_to_ckans[file])
         return True
 
     def validate_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None) -> bool:
@@ -138,6 +142,7 @@ class CkanMetaTester:
             return True
 
     def install_ckan(self, file: Path, orig_file: Path, pr_body: Optional[str], meta_repo: Optional[CkanMetaRepo]) -> bool:
+        logging.debug('Trying to install %s', file)
         ckan = CkanInstall(file)
         if meta_repo is not None:
             diff = ckan.find_diff(meta_repo)
