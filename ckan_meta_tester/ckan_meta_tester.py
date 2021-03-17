@@ -37,6 +37,8 @@ class CkanMetaTester:
 
     PR_BODY_COMPAT_PATTERN = re.compile('ckan compat add((?: [0-9.]+)+)')
 
+    GNU_LINE_COL_PATTERN = re.compile(r'^[^:]+:(?P<line>[0-9]+)[:.](?P<col>[0-9]+)')
+
     REF_ENV_VARS = [
         'GITHUB_PR_BASE_SHA',
         'GITHUB_EVENT_BEFORE'
@@ -89,7 +91,7 @@ class CkanMetaTester:
     def test_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None, meta_repo: Optional[CkanMetaRepo] = None) -> bool:
         logging.debug('Attempting jsonlint for %s', file)
         if not self.run_for_file(
-            file, ['jsonlint', '-s', '-v', file], full_output_as_error=True):
+            file, ['jsonlint', '-s', '-v', file], full_output_as_error=True, gnu_line_col_fmt=True):
             logging.debug('jsonlint failed for %s', file)
             return False
         suffix = file.suffix.lower()
@@ -248,7 +250,7 @@ class CkanMetaTester:
         return True
 
     def run_for_file(self, file: Path, cmd: List[Any],
-        input: Optional[str] = None, full_output_as_error: Optional[bool] = False) -> bool:
+        input: Optional[str] = None, full_output_as_error: Optional[bool] = False, gnu_line_col_fmt: Optional[bool] = False) -> bool:
 
         p = Popen(cmd, text=True, universal_newlines=True,
                   stdin=(PIPE if input else None), stdout=PIPE, stderr=STDOUT)
@@ -279,6 +281,17 @@ class CkanMetaTester:
         else:
             if full_output_as_error:
                 # This is the crazy method for putting newlines into ::error
-                full_output = full_output.replace('\n', '%0A')
-                print(f'::error file={file}::{full_output}', flush=True)
+                full_output = full_output.rstrip().replace('\n', '%0A')
+                if gnu_line_col_fmt:
+                    # Get the line and column from the start of the output in GNU format
+                    # https://www.gnu.org/prep/standards/html_node/Errors.html
+                    match = self.GNU_LINE_COL_PATTERN.match(full_output)
+                    if match:
+                        line_num = match.group('line')
+                        col_num = match.group('col')
+                        print(f'::error file={file},line={line_num},col={col_num}::{full_output}', flush=True)
+                    else:
+                        print(f'::error file={file}::{full_output}', flush=True)
+                else:
+                    print(f'::error file={file}::{full_output}', flush=True)
             return False
