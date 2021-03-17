@@ -276,7 +276,7 @@ class CkanMetaTester:
                 print(line, flush=True, end='')
         if p.wait() == ExitStatus.success:
             if full_output_as_error:
-                print(full_output, flush=True)
+                print(full_output.rstrip(), flush=True)
             return True
         else:
             if full_output_as_error:
