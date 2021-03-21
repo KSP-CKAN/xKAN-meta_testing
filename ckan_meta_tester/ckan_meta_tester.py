@@ -40,8 +40,8 @@ class CkanMetaTester:
     GNU_LINE_COL_PATTERN = re.compile(r'^[^:]+:(?P<line>[0-9]+)[:.](?P<col>[0-9]+)')
 
     REF_ENV_VARS = [
-        'GITHUB_PR_BASE_SHA',
-        'GITHUB_EVENT_BEFORE'
+        'PR_BASE_SHA',
+        'EVENT_BEFORE'
     ]
 
     def __init__(self, i_am_the_bot: bool) -> None:
