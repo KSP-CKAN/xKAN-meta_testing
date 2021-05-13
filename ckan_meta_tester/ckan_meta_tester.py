@@ -193,7 +193,11 @@ class CkanMetaTester:
                 if f.is_file() and f.suffix.lower() == '.netkan')
 
     def branch_diff(self, repo: Repo) -> DiffIndex:
-        return repo.commit(self.get_start_ref()).diff(repo.head.commit)
+        start_ref = self.get_start_ref()
+        logging.info('Looking for changes between %s and %s', start_ref, repo.head.commit.hexsha)
+        start_commit = repo.commit(start_ref)
+        logging.info('Start commit sha is %s', start_commit.hexsha)
+        return start_commit.diff(repo.head.commit)
 
     def get_start_ref(self, default: str = 'origin/master') -> str:
         ref = None
