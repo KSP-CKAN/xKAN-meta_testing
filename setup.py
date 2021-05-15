@@ -22,6 +22,7 @@ setup(
         'exitstatus',
         'requests',
         'demjson',
+        'yamllint',
     ],
     extras_require={
         'development': [
