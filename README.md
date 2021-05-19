@@ -59,6 +59,7 @@ jobs:
               uses: actions/checkout@v2
               with:
                   fetch-depth: 0
+                  ref: ${{ github.event.pull_request.head.sha }}
             - name: Cache downloads
               uses: actions/cache@v2
               with:
@@ -97,6 +98,7 @@ jobs:
               uses: actions/checkout@v2
               with:
                   fetch-depth: 0
+                  ref: ${{ github.event.pull_request.head.sha }}
             - name: Cache downloads
               uses: actions/cache@v2
               with:
