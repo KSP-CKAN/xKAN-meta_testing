@@ -13,6 +13,6 @@ jobs:
           with:
               python-version: 3.8
         - name: Install Mypy
-          run: pip install mypy
+          run: pip install mypy types-requests
         - name: Mypy
           run: mypy .
