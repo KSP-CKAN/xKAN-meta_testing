@@ -90,14 +90,19 @@ class CkanMetaTester:
 
     def test_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None, meta_repo: Optional[CkanMetaRepo] = None) -> bool:
         logging.debug('Attempting jsonlint for %s', file)
-        if not self.run_for_file(
-            file, ['jsonlint', '-s', '-v', file], full_output_as_error=True, gnu_line_col_fmt=True):
-            logging.debug('jsonlint failed for %s', file)
-            return False
         suffix = file.suffix.lower()
         if suffix == '.netkan':
+            if not self.run_for_file(
+                file, ['yamllint', '-d', '{extends: relaxed, rules: {colons: disable}}', file],
+                full_output_as_error=True, gnu_line_col_fmt=True):
+                logging.debug('yamllint failed for %s', file)
+                return False
             return self.inflate_file(file, overwrite_cache, github_token, meta_repo)
         elif suffix == '.ckan':
+            if not self.run_for_file(
+                file, ['jsonlint', '-s', '-v', file], full_output_as_error=True, gnu_line_col_fmt=True):
+                logging.debug('jsonlint failed for %s', file)
+                return False
             return self.validate_file(file, overwrite_cache, github_token)
         else:
             raise ValueError(f'Cannot test file {file}, must be .netkan or .ckan')
