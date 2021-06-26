@@ -30,7 +30,7 @@ jobs:
             - name: Test meta-netkans
               uses: KSP-CKAN/xKAN-meta_testing@master
               with:
-                  pull request body: ${{ github.event.pull_request.body }}
+                  pull request url: ${{ github.event.pull_request.url }}
 ```
 
 If you're on the CKAN dev team, a few changes are needed for the main metadata repos, to make the Action search the commit history for changes:
@@ -75,7 +75,7 @@ jobs:
                   EVENT_BEFORE: ${{ github.event.before }}
               with:
                   source: commits
-                  pull request body: ${{ github.event.pull_request.body }}
+                  pull request url: ${{ github.event.pull_request.url }}
 ```
 
 CKAN-meta should use essentially the same configuration with different labels; the script handles both .netkan and .ckan files depending on what is in the repo:
@@ -114,7 +114,7 @@ jobs:
                   EVENT_BEFORE: ${{ github.event.before }}
               with:
                   source: commits
-                  pull request body: ${{ github.event.pull_request.body }}
+                  pull request url: ${{ github.event.pull_request.url }}
 ```
 
 ## See also
