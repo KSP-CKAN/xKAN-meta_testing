@@ -93,8 +93,7 @@ class CkanMetaTester:
         suffix = file.suffix.lower()
         if suffix == '.netkan':
             if not self.run_for_file(
-                file, ['yamllint', '-d', '{extends: relaxed, rules: {colons: disable}}', file],
-                full_output_as_error=True, gnu_line_col_fmt=True):
+                file, ['yamllint', '-f', 'github', '-d', '{extends: relaxed, rules: {colons: disable}}', file]):
                 logging.debug('yamllint failed for %s', file)
                 return False
             return self.inflate_file(file, overwrite_cache, github_token, meta_repo)
