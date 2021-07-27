@@ -70,4 +70,4 @@ class GameVersion:
         return self.val
 
     def __repr__(self) -> str:
-        return f'<GameVersion {self.val}>'
+        return f'<GameVersion({self.val})>'
