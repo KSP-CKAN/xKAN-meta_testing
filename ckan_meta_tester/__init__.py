@@ -1,4 +1,3 @@
-import json
 import logging
 import requests
 from os import environ
@@ -39,7 +38,12 @@ def get_pr_body(github_token: Optional[str], pr_url: Optional[str]) -> str:
 
         resp = requests.get(pr_url, headers=headers)
         if resp.ok:
-            return resp.json().get('body', '')
+            body = resp.json().get('body')
+            if not body:
+                # If the PR has an empty body, 'body' is set to None, not the empty string
+                logging.warning('::warning::Pull requests should have a description with a summary of the changes')
+                return ''
+            return body
         else:
             logging.warning(resp.text)
     return ''
