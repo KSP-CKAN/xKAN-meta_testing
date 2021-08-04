@@ -2,13 +2,13 @@ import re
 from os import environ
 from shutil import copy
 import logging
-from git import Repo, Commit, DiffIndex
+from git import Repo, DiffIndex
 from subprocess import run, Popen, PIPE, STDOUT
 from pathlib import Path
 from importlib.resources import read_text
 from string import Template
 from exitstatus import ExitStatus
-from typing import Optional, Iterable, Set, List, Any, Dict, Tuple
+from typing import Optional, Iterable, Set, List, Any, Tuple
 from collections import OrderedDict
 from tempfile import TemporaryDirectory
 
@@ -198,10 +198,17 @@ class CkanMetaTester:
 
     def branch_diff(self, repo: Repo) -> DiffIndex:
         start_ref = self.get_start_ref()
-        logging.info('Looking for changes between %s and %s', start_ref, repo.head.commit.hexsha)
+        logging.info('Looking for merge base between %s and %s', start_ref, repo.head.commit.hexsha)
         start_commit = repo.commit(start_ref)
-        logging.info('Start commit sha is %s', start_commit.hexsha)
-        return start_commit.diff(repo.head.commit)
+        # Has one item or none
+        common_ancestors = repo.merge_base(start_commit, repo.head.commit)
+        if len(common_ancestors) < 1:
+            raise ValueError(f'Could not find common ancestor between start ref {start_commit.hexsha}'
+                             f' and HEAD {repo.head.commit.hexsha}')
+        merge_base = common_ancestors[0]
+        logging.info('Looking for changes between %s and %s', merge_base, repo.head.commit.hexsha)
+        logging.info('Base commit sha is %s', merge_base.hexsha)
+        return merge_base.diff(repo.head.commit)
 
     def get_start_ref(self, default: str = 'origin/master') -> str:
         ref = None
