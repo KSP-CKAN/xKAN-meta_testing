@@ -41,7 +41,7 @@ def get_pr_body(github_token: Optional[str], pr_url: Optional[str]) -> str:
             body = resp.json().get('body')
             if not body:
                 # If the PR has an empty body, 'body' is set to None, not the empty string
-                logging.warning('::warning::Pull requests should have a description with a summary of the changes')
+                print('::warning::Pull requests should have a description with a summary of the changes')
                 return ''
             return body
         else:
