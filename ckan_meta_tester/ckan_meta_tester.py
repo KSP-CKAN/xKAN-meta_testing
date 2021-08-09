@@ -1,5 +1,5 @@
 import re
-from os import environ
+from os import environ, makedirs
 from shutil import copy
 import logging
 from git import Repo, DiffIndex
@@ -29,7 +29,7 @@ class CkanMetaTester:
 
     INFLATED_PATH = Path('/ckans')
     CACHE_PATH    = Path('.cache')
-    REPO_PATH     = Path('.repo')
+    REPO_PATH     = Path('.repo').resolve()
     TINY_REPO     = REPO_PATH.joinpath('metadata.tar.gz')
 
     CKAN_INSTALL_TEMPLATE = Template(read_text(
@@ -48,6 +48,7 @@ class CkanMetaTester:
         self.source_to_ckans: OrderedDict[Path, List[Path]] = OrderedDict()
         self.failed = False
         self.i_am_the_bot = i_am_the_bot
+        makedirs(self.REPO_PATH, exist_ok=True)
 
     def test_metadata(self, source: str = 'netkans', pr_body: str = '', github_token: Optional[str] = None, diff_meta_root: Optional[str] = None) -> bool:
 
