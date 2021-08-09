@@ -29,7 +29,7 @@ class CkanMetaTester:
 
     INFLATED_PATH = Path('/ckans')
     CACHE_PATH    = Path('.cache')
-    REPO_PATH     = Path('/repo')
+    REPO_PATH     = Path('.repo')
     TINY_REPO     = REPO_PATH.joinpath('metadata.tar.gz')
 
     CKAN_INSTALL_TEMPLATE = Template(read_text(
