@@ -27,7 +27,7 @@ class CkanMetaTester:
     NETKAN_PATH = BIN_PATH.joinpath('netkan.exe')
     CKAN_PATH   = BIN_PATH.joinpath('ckan.exe')
 
-    INFLATED_PATH = Path('/ckans')
+    INFLATED_PATH = Path('.ckans')
     CACHE_PATH    = Path('.cache')
     REPO_PATH     = Path('.repo').resolve()
     TINY_REPO     = REPO_PATH.joinpath('metadata.tar.gz')
@@ -48,6 +48,7 @@ class CkanMetaTester:
         self.source_to_ckans: OrderedDict[Path, List[Path]] = OrderedDict()
         self.failed = False
         self.i_am_the_bot = i_am_the_bot
+        makedirs(self.INFLATED_PATH, exist_ok=True)
         makedirs(self.REPO_PATH, exist_ok=True)
 
     def test_metadata(self, source: str = 'netkans', pr_body: str = '', github_token: Optional[str] = None, diff_meta_root: Optional[str] = None) -> bool:
