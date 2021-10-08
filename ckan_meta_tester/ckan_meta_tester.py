@@ -34,8 +34,11 @@ class CkanMetaTester:
 
     CKAN_INSTALL_TEMPLATE = Template(read_text(
         'ckan_meta_tester', 'ckan_install_template.txt'))
+    CKAN_INSTALL_IDENTIFIERS_TEMPLATE = Template(read_text(
+        'ckan_meta_tester', 'ckan_install_identifiers_template.txt'))
 
     PR_BODY_COMPAT_PATTERN = re.compile('ckan compat add((?: [0-9.]+)+)')
+    PR_BODY_TESTS_PATTERN = re.compile('ckan install((?: [A-Za-z][A-Za-z0-9-]*)+)')
 
     GNU_LINE_COL_PATTERN = re.compile(r'^[^:]+:(?P<line>[0-9]+)[:.](?P<col>[0-9]+)')
 
@@ -87,6 +90,12 @@ class CkanMetaTester:
                 if not self.install_ckan(file, orig_file, pr_body, meta_repo):
                     logging.error('Install of %s failed!', file)
                     self.failed = True
+
+        for identifiers in self.pr_body_tests(pr_body):
+            logging.debug('Installing identifiers: %s', ' '.join(identifiers))
+            if not self.install_identifiers(identifiers, pr_body):
+                logging.error('Install of %s failed!', ' '.join(identifiers))
+                self.failed = True
 
         return not self.failed
 
@@ -174,6 +183,24 @@ class CkanMetaTester:
                     input=self.CKAN_INSTALL_TEMPLATE.substitute(
                         ckanfile=file, identifier=ckan.identifier))
 
+    def install_identifiers(self, identifiers: List[str], pr_body: Optional[str]) -> bool:
+        logging.debug('Trying to install %s', ' '.join(identifiers))
+        with LogGroup(f'Installing {" ".join(identifiers)}'):
+            versions = self.pr_body_versions(pr_body)
+            if len(versions) < 1:
+                print(f'::error::No game versions specified!', flush=True)
+                return False
+
+            with DummyGameInstance(
+                Path('/game-instance'), self.CKAN_PATH, self.TINY_REPO,
+                versions[-1], versions[:-1], self.CACHE_PATH):
+
+                return self.run_for_file(
+                    None,
+                    ['mono', self.CKAN_PATH, 'prompt', '--headless'],
+                    input=self.CKAN_INSTALL_IDENTIFIERS_TEMPLATE.substitute(
+                        identifiers=' '.join(identifiers)))
+
     def pr_body_versions(self, pr_body: Optional[str]) -> List[GameVersion]:
         if not pr_body:
             return []
@@ -182,6 +209,12 @@ class CkanMetaTester:
         return [] if not match else list(map(
             lambda v: GameVersion(v),
             match.group(1).strip().split(' ')))
+
+    def pr_body_tests(self, pr_body: Optional[str]) -> Iterable[List[str]]:
+        return [] if not pr_body else (
+            match.group(1).strip().split(' ')
+            for match
+            in self.PR_BODY_TESTS_PATTERN.findall(pr_body))
 
     def files_to_test(self, source: Optional[str]) -> Iterable[Path]:
         if not source:
@@ -266,7 +299,7 @@ class CkanMetaTester:
             print(f'::warning file={file}::To validate {file}, set its extension to .netkan or .ckan', flush=True)
         return True
 
-    def run_for_file(self, file: Path, cmd: List[Any],
+    def run_for_file(self, file: Optional[Path], cmd: List[Any],
         input: Optional[str] = None, full_output_as_error: Optional[bool] = False, gnu_line_col_fmt: Optional[bool] = False) -> bool:
 
         p = Popen(cmd, text=True, universal_newlines=True,
@@ -286,9 +319,15 @@ class CkanMetaTester:
             if full_output_as_error:
                 full_output += line
             elif ' ERROR ' in line or ' FATAL ' in line:
-                print(f'::error file={file}::{line}', flush=True, end='')
+                if file:
+                    print(f'::error file={file}::{line}', flush=True, end='')
+                else:
+                    print(f'::error::{line}', flush=True, end='')
             elif ' WARN ' in line:
-                print(f'::warning file={file}::{line}', flush=True, end='')
+                if file:
+                    print(f'::warning file={file}::{line}', flush=True, end='')
+                else:
+                    print(f'::warning::{line}', flush=True, end='')
             else:
                 print(line, flush=True, end='')
         if p.wait() == ExitStatus.success:
@@ -306,9 +345,18 @@ class CkanMetaTester:
                     if match:
                         line_num = match.group('line')
                         col_num = match.group('col')
-                        print(f'::error file={file},line={line_num},col={col_num}::{full_output}', flush=True)
+                        if file:
+                            print(f'::error file={file},line={line_num},col={col_num}::{full_output}', flush=True)
+                        else:
+                            print(f'::error::{full_output}', flush=True)
                     else:
-                        print(f'::error file={file}::{full_output}', flush=True)
+                        if file:
+                            print(f'::error file={file}::{full_output}', flush=True)
+                        else:
+                            print(f'::error::{full_output}', flush=True)
                 else:
-                    print(f'::error file={file}::{full_output}', flush=True)
+                    if file:
+                        print(f'::error file={file}::{full_output}', flush=True)
+                    else:
+                        print(f'::error::{full_output}', flush=True)
             return False
