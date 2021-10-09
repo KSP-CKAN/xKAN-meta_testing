@@ -38,7 +38,7 @@ class CkanMetaTester:
         'ckan_meta_tester', 'ckan_install_identifiers_template.txt'))
 
     PR_BODY_COMPAT_PATTERN = re.compile('ckan compat add((?: [0-9.]+)+)')
-    PR_BODY_TESTS_PATTERN = re.compile('ckan install((?: [A-Za-z][A-Za-z0-9-]*)+)')
+    PR_BODY_TESTS_PATTERN = re.compile('ckan install((?: [A-Za-z][A-Za-z0-9-]*(?:=\S+)?)+)')
 
     GNU_LINE_COL_PATTERN = re.compile(r'^[^:]+:(?P<line>[0-9]+)[:.](?P<col>[0-9]+)')
 
