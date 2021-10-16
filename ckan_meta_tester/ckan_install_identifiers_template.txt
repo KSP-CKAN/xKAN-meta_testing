@@ -1,0 +1,3 @@
+cache setlimit 5000
+install $identifiers --headless
+list --porcelain
