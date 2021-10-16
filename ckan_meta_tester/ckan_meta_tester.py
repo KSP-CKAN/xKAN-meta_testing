@@ -37,8 +37,8 @@ class CkanMetaTester:
     CKAN_INSTALL_IDENTIFIERS_TEMPLATE = Template(read_text(
         'ckan_meta_tester', 'ckan_install_identifiers_template.txt'))
 
-    PR_BODY_COMPAT_PATTERN = re.compile('ckan compat add((?: [0-9.]+)+)')
-    PR_BODY_TESTS_PATTERN = re.compile('ckan install((?: [A-Za-z][A-Za-z0-9-]*(?:=\S+)?)+)')
+    PR_BODY_COMPAT_PATTERN = re.compile(r'ckan compat add((?: [0-9.]+)+)')
+    PR_BODY_TESTS_PATTERN = re.compile(r'ckan install((?: [A-Za-z][A-Za-z0-9-]*(?:=\S+)?)+)')
 
     GNU_LINE_COL_PATTERN = re.compile(r'^[^:]+:(?P<line>[0-9]+)[:.](?P<col>[0-9]+)')
 
@@ -212,7 +212,7 @@ class CkanMetaTester:
 
     def pr_body_tests(self, pr_body: Optional[str]) -> Iterable[List[str]]:
         return [] if not pr_body else (
-            match.group(1).strip().split(' ')
+            match.strip().split(' ')
             for match
             in self.PR_BODY_TESTS_PATTERN.findall(pr_body))
 
