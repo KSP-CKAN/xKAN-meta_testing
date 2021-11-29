@@ -26,6 +26,7 @@ class CkanMetaTester:
     BIN_PATH    = Path('/usr/local/bin')
     NETKAN_PATH = BIN_PATH.joinpath('netkan.exe')
     CKAN_PATH   = BIN_PATH.joinpath('ckan.exe')
+    USER_AGENT  = 'Mozilla/5.0 (compatible; Netkanbot/1.0; CKAN; +https://github.com/KSP-CKAN/xKAN-meta_testing)'
 
     INFLATED_PATH = Path('.ckans')
     CACHE_PATH    = Path('.cache')
@@ -151,6 +152,7 @@ class CkanMetaTester:
                 ['mono', self.NETKAN_PATH,
                  *(['--github-token', github_token] if github_token is not None else []),
                  '--cachedir', self.CACHE_PATH,
+                 '--net-useragent', self.USER_AGENT,
                  *(['--overwrite-cache'] if overwrite_cache else []),
                  '--validate-ckan', file]):
                 return False
@@ -179,7 +181,8 @@ class CkanMetaTester:
 
                 return self.run_for_file(
                     orig_file,
-                    ['mono', self.CKAN_PATH, 'prompt', '--headless'],
+                    ['mono', self.CKAN_PATH, 'prompt', '--headless',
+                     '--net-useragent', self.USER_AGENT],
                     input=self.CKAN_INSTALL_TEMPLATE.substitute(
                         ckanfile=file, identifier=ckan.identifier))
 
