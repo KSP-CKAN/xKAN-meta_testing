@@ -33,12 +33,19 @@ class DummyGameInstance:
              'instance', 'fake',
              '--set-default', '--headless',
              'dummy', self.where, str(self.main_ver),
-             *self._available_dlcs(self.main_ver)], capture_output=self.capture)
+             *self._available_dlcs(self.main_ver)],
+            capture_output=self.capture)
         for ver in self.other_versions:
             logging.debug('Setting version %s compatible', ver)
-            run(['mono', self.ckan_exe, 'compat', 'add', str(ver)], capture_output=self.capture)
+            run(['mono', self.ckan_exe, 'compat', 'add', str(ver)],
+                capture_output=self.capture)
         self.where.joinpath('CKAN').joinpath('downloads').symlink_to(self.cache_path.absolute())
-        run(['mono', self.ckan_exe, 'cache', 'set', self.cache_path.absolute(), '--headless'])
+        logging.debug('Setting cache location to %s', self.cache_path.absolute())
+        run(['mono', self.ckan_exe, 'cache', 'set', self.cache_path.absolute(), '--headless'],
+            capture_output=self.capture)
+        logging.debug('Setting cache limit to %s', 5000)
+        run(['mono', self.ckan_exe, 'cache', 'setlimit', '5000'],
+            capture_output=self.capture)
         logging.debug('Adding repo %s', self.addl_repo.as_uri())
         run(['mono', self.ckan_exe, 'repo', 'add', 'local', self.addl_repo.as_uri()],
             capture_output=self.capture)
@@ -47,7 +54,8 @@ class DummyGameInstance:
             copy(self.SAVED_REGISTRY, self.registry_path)
         else:
             logging.debug('Updating registry')
-            run(['mono', self.ckan_exe, 'update'], capture_output=self.capture)
+            run(['mono', self.ckan_exe, 'update'],
+                capture_output=self.capture)
             copy(self.registry_path, self.SAVED_REGISTRY)
             logging.debug('Saving registry to %s', self.SAVED_REGISTRY)
         logging.debug('Dummy instance is ready')
@@ -62,7 +70,8 @@ class DummyGameInstance:
     def __exit__(self, exc_type: Type[BaseException],
                  exc_value: BaseException, traceback: TracebackType) -> None:
         logging.debug('Removing instance from CKAN instance list')
-        run(['mono', self.ckan_exe, 'instance', 'forget', 'dummy'], capture_output=self.capture)
+        run(['mono', self.ckan_exe, 'instance', 'forget', 'dummy'],
+            capture_output=self.capture)
         logging.debug('Deleting instance contents')
         rmtree(self.where)
         logging.info('Dummy game instance deleted')
