@@ -1,4 +1,3 @@
-cache setlimit 5000
 install -c $ckanfile --headless
 list --porcelain
 show --with-versions $identifier
