@@ -1,0 +1,21 @@
+name: Deploy xKAN-meta_testing
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: CKAN repo dispatch
+    runs-on: ubuntu-latest
+    steps:
+      - name: CKAN repo dispatch
+        env:
+          REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+        if: env.REPO_ACCESS_TOKEN
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          repository: KSP-CKAN/CKAN
+          event-type: deploy
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
