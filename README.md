@@ -26,7 +26,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Get mod repo
-              uses: actions/checkout@v2
+              uses: actions/checkout@v3
             - name: Test meta-netkans
               uses: KSP-CKAN/xKAN-meta_testing@master
               with:
@@ -56,7 +56,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Get NetKAN repo
-              uses: actions/checkout@v2
+              uses: actions/checkout@v3
               with:
                   fetch-depth: 0
                   ref: ${{ github.event.pull_request.head.sha }}
@@ -95,7 +95,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Get CKAN-meta repo
-              uses: actions/checkout@v2
+              uses: actions/checkout@v3
               with:
                   fetch-depth: 0
                   ref: ${{ github.event.pull_request.head.sha }}
