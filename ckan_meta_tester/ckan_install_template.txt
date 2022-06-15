@@ -1,3 +1,4 @@
 install -c $ckanfile --headless
 list --porcelain
 show --with-versions $identifier
+remove $identifier --headless
