@@ -7,3 +7,4 @@ ignore=
 
 disable=
     missing-docstring,
+    line-too-long

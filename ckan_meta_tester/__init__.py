@@ -1,9 +1,10 @@
+import sys
 import logging
-import requests
 from os import environ
-from exitstatus import ExitStatus
 from typing import Optional
 from urllib.parse import urlparse
+import requests
+from exitstatus import ExitStatus
 
 from .ckan_meta_tester import CkanMetaTester
 
@@ -16,12 +17,12 @@ def test_metadata() -> None:
     github_token = environ.get('GITHUB_TOKEN')
 
     ex = CkanMetaTester(environ.get('GITHUB_ACTOR') == 'netkan-bot')
-    exit(ExitStatus.success
-         if ex.test_metadata(environ.get('INPUT_SOURCE', 'netkans'),
-                             get_pr_body(github_token, environ.get('INPUT_PULL_REQUEST_URL')),
-                             github_token,
-                             environ.get('INPUT_DIFF_META_ROOT'))
-         else ExitStatus.failure)
+    sys.exit(ExitStatus.success
+             if ex.test_metadata(environ.get('INPUT_SOURCE', 'netkans'),
+                                 get_pr_body(github_token, environ.get('INPUT_PULL_REQUEST_URL')),
+                                 github_token,
+                                 environ.get('INPUT_DIFF_META_ROOT'))
+             else ExitStatus.failure)
 
 
 def get_pr_body(github_token: Optional[str], pr_url: Optional[str]) -> str:
@@ -36,14 +37,9 @@ def get_pr_body(github_token: Optional[str], pr_url: Optional[str]) -> str:
             else:
                 logging.warning('Invalid pull request url, omitting Authorization header')
 
-        resp = requests.get(pr_url, headers=headers)
+        resp = requests.get(pr_url, headers=headers, timeout=30)
         if resp.ok:
-            body = resp.json().get('body')
-            if not body:
-                # If the PR has an empty body, 'body' is set to None, not the empty string
-                print('::warning::Pull requests should have a description with a summary of the changes')
-                return ''
-            return body
-        else:
-            logging.warning(resp.text)
+            # If the PR has an empty body, 'body' is set to None, not the empty string
+            return resp.json().get('body') or ''
+        logging.warning(resp.text)
     return ''

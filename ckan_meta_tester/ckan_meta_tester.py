@@ -2,15 +2,15 @@ import re
 from os import environ, makedirs
 from shutil import copy
 import logging
-from git import Repo, DiffIndex
 from subprocess import run, Popen, PIPE, STDOUT
 from pathlib import Path
 from importlib.resources import read_text
 from string import Template
-from exitstatus import ExitStatus
-from typing import Optional, Iterable, Set, List, Any, Tuple
+from typing import Optional, Iterable, Set, List, Any, Tuple, OrderedDict as OD
 from collections import OrderedDict
 from tempfile import TemporaryDirectory
+from git import Repo, DiffIndex
+from exitstatus import ExitStatus
 
 from netkan.repos import CkanMetaRepo
 
@@ -49,7 +49,7 @@ class CkanMetaTester:
     ]
 
     def __init__(self, i_am_the_bot: bool) -> None:
-        self.source_to_ckans: OrderedDict[Path, List[Path]] = OrderedDict()
+        self.source_to_ckans: OD[Path, List[Path]] = OrderedDict()
         self.failed = False
         self.i_am_the_bot = i_am_the_bot
         makedirs(self.INFLATED_PATH, exist_ok=True)
@@ -72,6 +72,9 @@ class CkanMetaTester:
         meta_repo = CkanMetaRepo(Repo(Path(diff_meta_root))) if diff_meta_root else None
 
         for file in self.files_to_test(source):
+            if len(pr_body) < 1:
+                # Warn for empty PR body on every file so it's noticeable in the files changed tab
+                print(f'::warning file={file}::Pull requests should have a description with a summary of the changes')
             if not self.test_file(file, overwrite_cache, github_token, meta_repo):
                 logging.error('Test of %s failed!', file)
                 self.failed = True
@@ -83,7 +86,8 @@ class CkanMetaTester:
             return True
 
         # Make secondary repo file with our generated .ckans
-        run(['tar', 'czf', self.TINY_REPO, '-C', self.INFLATED_PATH, '.'])
+        run(['tar', 'czf', self.TINY_REPO, '-C', self.INFLATED_PATH, '.'],
+            check=True)
 
         for orig_file, files in self.source_to_ckans.items():
             logging.debug('Installing files for %s: %s', orig_file, files)
@@ -109,14 +113,13 @@ class CkanMetaTester:
                 logging.debug('yamllint failed for %s', file)
                 return False
             return self.inflate_file(file, overwrite_cache, github_token, meta_repo)
-        elif suffix == '.ckan':
+        if suffix == '.ckan':
             if not self.run_for_file(
                 file, ['jsonlint', '-s', '-v', file], full_output_as_error=True, gnu_line_col_fmt=True):
                 logging.debug('jsonlint failed for %s', file)
                 return False
             return self.validate_file(file, overwrite_cache, github_token)
-        else:
-            raise ValueError(f'Cannot test file {file}, must be .netkan or .ckan')
+        raise ValueError(f'Cannot test file {file}, must be .netkan or .ckan')
 
     def inflate_file(self, file: Path, overwrite_cache: bool, github_token: Optional[str] = None, meta_repo: Optional[CkanMetaRepo] = None) -> bool:
         high_ver = meta_repo.highest_version(file.stem) if meta_repo else None
@@ -183,7 +186,7 @@ class CkanMetaTester:
                     orig_file,
                     ['mono', self.CKAN_PATH, 'prompt', '--headless',
                      '--net-useragent', self.USER_AGENT],
-                    input=self.CKAN_INSTALL_TEMPLATE.substitute(
+                    input_str=self.CKAN_INSTALL_TEMPLATE.substitute(
                         ckanfile=file, identifier=ckan.identifier))
 
     def install_identifiers(self, identifiers: List[str], pr_body: Optional[str]) -> bool:
@@ -191,7 +194,7 @@ class CkanMetaTester:
         with LogGroup(f'Installing {" ".join(identifiers)}'):
             versions = self.pr_body_versions(pr_body)
             if len(versions) < 1:
-                print(f'::error::No game versions specified!', flush=True)
+                print('::error::No game versions specified!', flush=True)
                 return False
 
             with DummyGameInstance(
@@ -201,7 +204,7 @@ class CkanMetaTester:
                 return self.run_for_file(
                     None,
                     ['mono', self.CKAN_PATH, 'prompt', '--headless'],
-                    input=self.CKAN_INSTALL_IDENTIFIERS_TEMPLATE.substitute(
+                    input_str=self.CKAN_INSTALL_IDENTIFIERS_TEMPLATE.substitute(
                         identifiers=' '.join(identifiers)))
 
     def pr_body_versions(self, pr_body: Optional[str]) -> List[GameVersion]:
@@ -210,7 +213,7 @@ class CkanMetaTester:
         logging.debug('Trying to extract versions from %s', pr_body)
         match = self.PR_BODY_COMPAT_PATTERN.search(pr_body)
         return [] if not match else list(map(
-            lambda v: GameVersion(v),
+            GameVersion,
             match.group(1).strip().split(' ')))
 
     def pr_body_tests(self, pr_body: Optional[str]) -> Iterable[List[str]]:
@@ -222,19 +225,18 @@ class CkanMetaTester:
     def files_to_test(self, source: Optional[str]) -> Iterable[Path]:
         if not source:
             raise ValueError('Source cannot be None')
-        elif source == 'netkans':
+        if source == 'netkans':
             return self.netkans()
-        elif source == 'commits':
+        if source == 'commits':
             return self.paths_from_diff(self.branch_diff(Repo('.')))
-        else:
-            raise ValueError(f'Source {source} is not valid, must be netkans or commits')
+        raise ValueError(f'Source {source} is not valid, must be netkans or commits')
 
     def netkans(self) -> Iterable[Path]:
-        logging.debug(f'Searching repo for netkan files')
+        logging.debug('Searching repo for netkan files')
         return (f for f in Path().rglob('*')
                 if f.is_file() and f.suffix.lower() == '.netkan')
 
-    def branch_diff(self, repo: Repo) -> DiffIndex:
+    def branch_diff(self, repo: Repo) -> Optional[DiffIndex]:
         start_ref = self.get_start_ref()
         logging.debug('Looking for merge base between %s and %s', start_ref, repo.head.commit.hexsha)
         start_commit = repo.commit(start_ref)
@@ -244,6 +246,8 @@ class CkanMetaTester:
             raise ValueError(f'Could not find common ancestor between start ref {start_commit.hexsha}'
                              f' and HEAD {repo.head.commit.hexsha}')
         merge_base = common_ancestors[0]
+        if not merge_base:
+            return None
         logging.debug('Looking for changes between %s and %s', merge_base, repo.head.commit.hexsha)
         logging.debug('Base commit sha is %s', merge_base.hexsha)
         return merge_base.diff(repo.head.commit)
@@ -261,15 +265,17 @@ class CkanMetaTester:
                     break
         return ref if ref is not None else default
 
-    def paths_from_diff(self, diff: DiffIndex) -> Iterable[Path]:
-        logging.debug('Searching diff for changed files')
-        all_adds, all_mods = self.filenames_from_diff(diff)
-        # Existing files probably have valid names, new ones need to be checked
-        for f in all_adds:
-            if not self.check_added_path(Path(f)):
-                self.failed = True
-        files = sorted(all_adds | all_mods)
-        return (Path(f) for f in files if self.netkan_or_ckan(f))
+    def paths_from_diff(self, diff: Optional[DiffIndex]) -> Iterable[Path]:
+        if diff:
+            logging.debug('Searching diff for changed files')
+            all_adds, all_mods = self.filenames_from_diff(diff)
+            # Existing files probably have valid names, new ones need to be checked
+            for file in all_adds:
+                if not self.check_added_path(Path(file)):
+                    self.failed = True
+            files = sorted(all_adds | all_mods)
+            return (Path(file) for file in files if self.netkan_or_ckan(file))
+        return iter([])
 
     def filenames_from_diff(self, diff: DiffIndex) -> Tuple[Set[str], Set[str]]:
         added    = {ch.b_path for ch in diff.iter_change_type('A')}
@@ -303,63 +309,64 @@ class CkanMetaTester:
         return True
 
     def run_for_file(self, file: Optional[Path], cmd: List[Any],
-        input: Optional[str] = None, full_output_as_error: Optional[bool] = False, gnu_line_col_fmt: Optional[bool] = False) -> bool:
+        input_str: Optional[str] = None, full_output_as_error: Optional[bool] = False, gnu_line_col_fmt: Optional[bool] = False) -> bool:
 
-        p = Popen(cmd, text=True, universal_newlines=True,
-                  stdin=(PIPE if input else None), stdout=PIPE, stderr=STDOUT)
-        if p == None:
-            return False
-        if p.stdout is None:
-            return False
-        if input:
-            if p.stdin is None:
+        with Popen(cmd, text=True, universal_newlines=True,
+                   stdin=(PIPE if input_str else None), stdout=PIPE, stderr=STDOUT
+             ) as cmd_pipe:
+
+            if cmd_pipe is None:
                 return False
-            p.stdin.write(input)
-            p.stdin.flush()
-            p.stdin.close()
-        full_output = ''
-        for line in iter(p.stdout.readline, ''):
-            if full_output_as_error:
-                full_output += line
-            elif ' ERROR ' in line or ' FATAL ' in line:
-                if file:
-                    print(f'::error file={file}::{line}', flush=True, end='')
+            if cmd_pipe.stdout is None:
+                return False
+            if input_str:
+                if cmd_pipe.stdin is None:
+                    return False
+                cmd_pipe.stdin.write(input_str)
+                cmd_pipe.stdin.flush()
+                cmd_pipe.stdin.close()
+            full_output = ''
+            for line in iter(cmd_pipe.stdout.readline, ''):
+                if full_output_as_error:
+                    full_output += line
+                elif ' ERROR ' in line or ' FATAL ' in line:
+                    if file:
+                        print(f'::error file={file}::{line}', flush=True, end='')
+                    else:
+                        print(f'::error::{line}', flush=True, end='')
+                elif ' WARN ' in line:
+                    if file:
+                        print(f'::warning file={file}::{line}', flush=True, end='')
+                    else:
+                        print(f'::warning::{line}', flush=True, end='')
                 else:
-                    print(f'::error::{line}', flush=True, end='')
-            elif ' WARN ' in line:
-                if file:
-                    print(f'::warning file={file}::{line}', flush=True, end='')
-                else:
-                    print(f'::warning::{line}', flush=True, end='')
-            else:
-                print(line, flush=True, end='')
-        if p.wait() == ExitStatus.success:
-            if full_output_as_error:
-                print(full_output.rstrip(), flush=True)
-            return True
-        else:
-            if full_output_as_error:
-                # This is the crazy method for putting newlines into ::error
-                full_output = full_output.rstrip().replace('\n', '%0A')
-                if gnu_line_col_fmt:
-                    # Get the line and column from the start of the output in GNU format
-                    # https://www.gnu.org/prep/standards/html_node/Errors.html
-                    match = self.GNU_LINE_COL_PATTERN.match(full_output)
-                    if match:
-                        line_num = match.group('line')
-                        col_num = match.group('col')
-                        if file:
-                            print(f'::error file={file},line={line_num},col={col_num}::{full_output}', flush=True)
+                    print(line, flush=True, end='')
+            if cmd_pipe.wait() != ExitStatus.success:
+                if full_output_as_error:
+                    # This is the crazy method for putting newlines into ::error
+                    full_output = full_output.rstrip().replace('\n', '%0A')
+                    if gnu_line_col_fmt:
+                        # Get the line and column from the start of the output in GNU format
+                        # https://www.gnu.org/prep/standards/html_node/Errors.html
+                        match = self.GNU_LINE_COL_PATTERN.match(full_output)
+                        if match:
+                            line_num = match.group('line')
+                            col_num = match.group('col')
+                            if file:
+                                print(f'::error file={file},line={line_num},col={col_num}::{full_output}', flush=True)
+                            else:
+                                print(f'::error::{full_output}', flush=True)
                         else:
-                            print(f'::error::{full_output}', flush=True)
+                            if file:
+                                print(f'::error file={file}::{full_output}', flush=True)
+                            else:
+                                print(f'::error::{full_output}', flush=True)
                     else:
                         if file:
                             print(f'::error file={file}::{full_output}', flush=True)
                         else:
                             print(f'::error::{full_output}', flush=True)
-                else:
-                    if file:
-                        print(f'::error file={file}::{full_output}', flush=True)
-                    else:
-                        print(f'::error::{full_output}', flush=True)
-            return False
+                return False
+            if full_output_as_error:
+                print(full_output.rstrip(), flush=True)
+            return True
