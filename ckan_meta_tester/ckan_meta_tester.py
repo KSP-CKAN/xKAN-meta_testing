@@ -65,6 +65,8 @@ class CkanMetaTester:
 
     def test_metadata(self, source: str = 'netkans', pr_body: str = '', github_token: Optional[str] = None, diff_meta_root: Optional[str] = None) -> bool:
 
+        # Work around issue noted in noted in KSP-CKAN/NetKAN#9527
+        Repo('.').git.execute(['git', 'config', '--global', '--add', 'safe.directory', '/github/workspace'])
         logging.debug('Starting metadata test')
         self.debug_action()
         logging.debug('Builds: %s', [str(v) for v in CkanInstall.KNOWN_VERSIONS])
