@@ -55,9 +55,20 @@ class CkanMetaTester:
         makedirs(self.INFLATED_PATH, exist_ok=True)
         makedirs(self.REPO_PATH, exist_ok=True)
 
+    def debug_action(self) -> None:
+        if int(environ.get('RUNNER_DEBUG', 0)) == 0:
+            return
+        working = Path('.')
+        logging.debug('Current Working: %s', working.cwd())
+        logging.debug('Files: %s', ', '.join([str(x) for x in working.glob('*')]))
+        logging.debug('Repo: %s', Repo('.').git_dir)
+
     def test_metadata(self, source: str = 'netkans', pr_body: str = '', github_token: Optional[str] = None, diff_meta_root: Optional[str] = None) -> bool:
 
+        # Work around issue noted in noted in KSP-CKAN/NetKAN#9527
+        Repo('.').git.execute(['git', 'config', '--global', '--add', 'safe.directory', '/github/workspace'])
         logging.debug('Starting metadata test')
+        self.debug_action()
         logging.debug('Builds: %s', [str(v) for v in CkanInstall.KNOWN_VERSIONS])
 
         # Escape hatch in case author replaces a download after a previous success

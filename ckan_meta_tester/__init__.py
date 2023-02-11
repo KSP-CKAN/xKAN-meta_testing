@@ -11,8 +11,10 @@ from .ckan_meta_tester import CkanMetaTester
 
 def test_metadata() -> None:
     # setLevel can take a string representation, great!
-    logging.getLogger('').setLevel(
-        environ.get('INPUT_LOG_LEVEL', 'info').upper())
+    log_level = environ.get('INPUT_LOG_LEVEL', 'info').upper()
+    if int(environ.get('RUNNER_DEBUG', 0)) == 1:
+        log_level = 'debug'
+    logging.getLogger('').setLevel(log_level.upper())
 
     github_token = environ.get('GITHUB_TOKEN')
 
