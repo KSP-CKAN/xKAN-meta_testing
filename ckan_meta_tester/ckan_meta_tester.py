@@ -15,6 +15,7 @@ from exitstatus import ExitStatus
 from netkan.repos import CkanMetaRepo
 
 from .ckan_install import CkanInstall
+from .game import Game
 from .game_version import GameVersion
 from .dummy_game_instance import DummyGameInstance
 from .log_group import LogGroup
@@ -48,10 +49,11 @@ class CkanMetaTester:
         'EVENT_BEFORE'
     ]
 
-    def __init__(self, i_am_the_bot: bool) -> None:
+    def __init__(self, i_am_the_bot: bool, game_id: str) -> None:
         self.source_to_ckans: OD[Path, List[Path]] = OrderedDict()
         self.failed = False
         self.i_am_the_bot = i_am_the_bot
+        self.game = Game.from_id(game_id)
         makedirs(self.INFLATED_PATH, exist_ok=True)
         makedirs(self.REPO_PATH, exist_ok=True)
 
@@ -69,7 +71,7 @@ class CkanMetaTester:
         Repo('.').git.execute(['git', 'config', '--global', '--add', 'safe.directory', '/github/workspace'])
         logging.debug('Starting metadata test')
         self.debug_action()
-        logging.debug('Builds: %s', [str(v) for v in CkanInstall.KNOWN_VERSIONS])
+        logging.debug('Builds: %s', [str(v) for v in self.game.versions])
 
         # Escape hatch in case author replaces a download after a previous success
         # (which will save it to the persistent cache)
@@ -141,6 +143,7 @@ class CkanMetaTester:
                 if not self.run_for_file(
                     file,
                     ['mono', self.NETKAN_PATH,
+                     '--game', self.game.short_name,
                      *(['--github-token', github_token] if github_token is not None else []),
                      '--cachedir', self.CACHE_PATH,
                      *(['--highest-version', str(high_ver)] if high_ver else []),
@@ -164,6 +167,7 @@ class CkanMetaTester:
             if not self.run_for_file(
                 file,
                 ['mono', self.NETKAN_PATH,
+                 '--game', self.game.short_name,
                  *(['--github-token', github_token] if github_token is not None else []),
                  '--cachedir', self.CACHE_PATH,
                  '--net-useragent', self.USER_AGENT,
@@ -184,14 +188,14 @@ class CkanMetaTester:
                     print(diff, end='', flush=True)
         with LogGroup(f'Installing {ckan.name} {ckan.version}'):
             versions = [*self.pr_body_versions(pr_body),
-                        *ckan.compat_versions()]
+                        *ckan.compat_versions(self.game)]
             if len(versions) < 1:
                 print(f'::error file={orig_file}::{file} is not compatible with any game versions!', flush=True)
                 return False
 
             with DummyGameInstance(
                 Path('/game-instance'), self.CKAN_PATH, self.TINY_REPO,
-                versions[-1], versions[:-1], self.CACHE_PATH):
+                versions[-1], versions[:-1], self.CACHE_PATH, self.game):
 
                 return self.run_for_file(
                     orig_file,
@@ -210,7 +214,7 @@ class CkanMetaTester:
 
             with DummyGameInstance(
                 Path('/game-instance'), self.CKAN_PATH, self.TINY_REPO,
-                versions[-1], versions[:-1], self.CACHE_PATH):
+                versions[-1], versions[:-1], self.CACHE_PATH, self.game):
 
                 return self.run_for_file(
                     None,

@@ -1,32 +1,22 @@
-import re
-import requests
 import logging
-from collections import OrderedDict
 from difflib import unified_diff
 from typing import List, Optional
 
 from netkan.metadata import Ckan
 from netkan.repos import CkanMetaRepo
 
+from .game import Game
 from .game_version import GameVersion
 
-
-# Should be a class constant, but then we can't access it from KNOWN_VERSIONS's lambda
-BUILD_PATTERN=re.compile('\.[0-9]+$')
 
 class CkanInstall(Ckan):
     """Metadata file representation with extensions for installation"""
 
-    BUILDS_URL = 'https://raw.githubusercontent.com/KSP-CKAN/CKAN/master/Core/builds.json'
-    KNOWN_VERSIONS = [GameVersion(v) for v in OrderedDict.fromkeys(map(
-        lambda v: BUILD_PATTERN.sub('', v),
-        requests.get(BUILDS_URL).json().get('builds').values()))]
-
-    def compat_versions(self) -> List[GameVersion]:
+    def compat_versions(self, game: Game) -> List[GameVersion]:
         minv = self.lowest_compat()
         maxv = self.highest_compat()
         logging.debug('Finding versions from %s to %s', minv, maxv)
-        return [v for v in self.KNOWN_VERSIONS
+        return [v for v in game.versions
                 if v.compatible(minv, maxv)]
 
     def lowest_compat(self) -> GameVersion:

@@ -4,6 +4,7 @@ from unittest import TestCase
 from unittest.mock import Mock, patch, call
 from tempfile import TemporaryDirectory, TemporaryFile
 
+from ckan_meta_tester.game import Game
 from ckan_meta_tester.game_version import GameVersion
 from ckan_meta_tester.dummy_game_instance import DummyGameInstance
 
@@ -34,7 +35,8 @@ class TestDummyGameInstance(TestCase):
             Path('/repo/metadata.tar.gz'),
             GameVersion('1.8.1'),
             [GameVersion('1.8.0')],
-            Path('/cache')):
+            Path('/cache'),
+            Game.from_id('KSP')):
 
             pass
 
@@ -52,6 +54,7 @@ class TestDummyGameInstance(TestCase):
         ])
         self.assertEqual(mocked_run.mock_calls, [
             call(['mono', PosixPath('/ckan.exe'), 'instance', 'fake',
+                  '--game', 'KSP',
                   '--set-default', '--headless', 'dummy',
                   PosixPath('/game-instance'), '1.8.1',
                   '--MakingHistory', '1.1.0', '--BreakingGround', '1.0.0'],

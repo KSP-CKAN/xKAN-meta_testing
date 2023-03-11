@@ -18,7 +18,8 @@ def test_metadata() -> None:
 
     github_token = environ.get('GITHUB_TOKEN')
 
-    ex = CkanMetaTester(environ.get('GITHUB_ACTOR') == 'netkan-bot')
+    ex = CkanMetaTester(environ.get('GITHUB_ACTOR') == 'netkan-bot',
+                        environ.get('INPUT_GAME', 'KSP'))
     sys.exit(ExitStatus.success
              if ex.test_metadata(environ.get('INPUT_SOURCE', 'netkans'),
                                  get_pr_body(github_token, environ.get('INPUT_PULL_REQUEST_URL')),

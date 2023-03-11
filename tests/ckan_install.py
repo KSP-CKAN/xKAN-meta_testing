@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from ckan_meta_tester.ckan_install import CkanInstall
 from ckan_meta_tester.game_version import GameVersion
-
+from ckan_meta_tester.game import Ksp1
 
 class TestCkanInstall(TestCase):
 
@@ -24,7 +24,7 @@ class TestCkanInstall(TestCase):
         # Act / Assert
         self.assertEqual(cki.lowest_compat(), GameVersion('1.8'))
         self.assertEqual(cki.highest_compat(), GameVersion('1.10'))
-        self.assertEqual(cki.compat_versions(), [
+        self.assertEqual(cki.compat_versions(Ksp1()), [
             GameVersion('1.8.0'), GameVersion('1.8.1'),
             GameVersion('1.9.0'), GameVersion('1.9.1'),
             GameVersion('1.10.0'), GameVersion('1.10.1'),

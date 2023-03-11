@@ -16,6 +16,12 @@ inputs:
         required: false
         default: info
 
+    game:
+        description: |-
+            Short name of the game to be used for inflation, either KSP or KSP2
+        required: false
+        default: KSP
+
     source:
         description: |-
             What to test:

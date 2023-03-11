@@ -6,11 +6,11 @@ from ckan_meta_tester.ckan_meta_tester import CkanMetaTester
 class TestCkanMetaTester(unittest.TestCase):
 
     def test_true(self) -> None:
-        tester = CkanMetaTester(False)
+        tester = CkanMetaTester(False, 'KSP')
         self.assertTrue(tester.test_metadata())
 
     def test_pr_body_tests(self) -> None:
-        tester = CkanMetaTester(False)
+        tester = CkanMetaTester(False, 'KSP')
         result = tester.pr_body_tests("""
         ## Description
         Basic test case
