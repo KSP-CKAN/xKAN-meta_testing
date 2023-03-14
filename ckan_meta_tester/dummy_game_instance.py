@@ -5,6 +5,7 @@ from subprocess import run
 from types import TracebackType
 from typing import Type, List
 
+from .game import Game
 from .game_version import GameVersion
 
 
@@ -14,7 +15,7 @@ class DummyGameInstance:
     MAKING_HISTORY_VERSION=GameVersion('1.4.1')
     BREAKING_GROUND_VERSION=GameVersion('1.7.1')
 
-    def __init__(self, where: Path, ckan_exe: Path, addl_repo: Path, main_ver: GameVersion, other_versions: List[GameVersion], cache_path: Path) -> None:
+    def __init__(self, where: Path, ckan_exe: Path, addl_repo: Path, main_ver: GameVersion, other_versions: List[GameVersion], cache_path: Path, game: Game) -> None:
         self.where = where
         self.registry_path = self.where.joinpath('CKAN').joinpath('registry.json')
         self.ckan_exe = ckan_exe
@@ -22,6 +23,7 @@ class DummyGameInstance:
         self.main_ver = main_ver
         self.other_versions = other_versions
         self.cache_path = cache_path
+        self.game = game
         # Hide ckan.exe output unless debugging is enabled
         self.capture = not logging.getLogger().isEnabledFor(logging.DEBUG)
 
@@ -31,6 +33,7 @@ class DummyGameInstance:
         logging.debug('Populating fake instance contents')
         run(['mono', self.ckan_exe,
              'instance', 'fake',
+             '--game', self.game.short_name,
              '--set-default', '--headless',
              'dummy', self.where, str(self.main_ver),
              *self._available_dlcs(self.main_ver)],
