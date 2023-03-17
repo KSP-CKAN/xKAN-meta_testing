@@ -1,5 +1,4 @@
 import re
-import logging
 from functools import total_ordering
 from typing import Match, Optional
 
@@ -8,7 +7,7 @@ from typing import Match, Optional
 class GameVersion:
 
     VERSION_PATTERN = re.compile(
-        '^(?P<major>\d+)(\.(?P<minor>\d+))?(\.(?P<patch>\d+))?(\.(?P<build>\d+))?$')
+        r'^(?P<major>\d+)(\.(?P<minor>\d+))?(\.(?P<patch>\d+))?(\.(?P<build>\d+))?$')
 
     def __init__(self, val: str) -> None:
         self.val = val
@@ -48,7 +47,7 @@ class GameVersion:
             return False
         return True
 
-    def _piece_lt(slef, a: Optional[int], b: Optional[int]) -> bool:
+    def _piece_lt(self, a: Optional[int], b: Optional[int]) -> bool:
         return a is not None and b is not None and a < b
 
     def _piece_le(self, a: Optional[int], b: Optional[int]) -> bool:
@@ -62,8 +61,8 @@ class GameVersion:
                 and self.build == other.build
         return False
 
-    def _get_int_group(self, match: Match[str], groupName: str) -> Optional[int]:
-        matched = match.group(groupName)
+    def _get_int_group(self, match: Match[str], group_name: str) -> Optional[int]:
+        matched = match.group(group_name)
         return int(matched) if matched else None
 
     def __str__(self) -> str:
