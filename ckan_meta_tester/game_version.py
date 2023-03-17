@@ -8,7 +8,7 @@ from typing import Match, Optional
 class GameVersion:
 
     VERSION_PATTERN = re.compile(
-        '^(?P<major>\d+)\.(?P<minor>\d+)(\.(?P<patch>\d+))?(\.(?P<build>\d+))?$')
+        '^(?P<major>\d+)(\.(?P<minor>\d+))?(\.(?P<patch>\d+))?(\.(?P<build>\d+))?$')
 
     def __init__(self, val: str) -> None:
         self.val = val
