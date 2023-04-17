@@ -21,7 +21,7 @@ setup(
         'gitpython',
         'exitstatus',
         'requests',
-        'demjson',
+        'demjson3',
         'yamllint',
     ],
     extras_require={
