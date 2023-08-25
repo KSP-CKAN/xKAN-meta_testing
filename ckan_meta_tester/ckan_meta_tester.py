@@ -9,8 +9,11 @@ from string import Template
 from typing import Optional, Iterable, Set, List, Any, Tuple, OrderedDict as OD
 from collections import OrderedDict
 from tempfile import TemporaryDirectory
+from urllib.parse import urlparse
+
 from git import Repo, DiffIndex
 from exitstatus import ExitStatus
+import requests
 
 from netkan.repos import CkanMetaRepo
 
@@ -65,7 +68,9 @@ class CkanMetaTester:
         logging.debug('Files: %s', ', '.join([str(x) for x in working.glob('*')]))
         logging.debug('Repo: %s', Repo('.').git_dir)
 
-    def test_metadata(self, source: str = 'netkans', pr_body: str = '', github_token: Optional[str] = None, diff_meta_root: Optional[str] = None) -> bool:
+    def test_metadata(self, source: str = 'netkans', pr_body_url: Optional[str] = None, github_token: Optional[str] = None, diff_meta_root: Optional[str] = None) -> bool:
+
+        pr_body = self.get_pr_body(github_token, pr_body_url)
 
         # Work around issue noted in noted in KSP-CKAN/NetKAN#9527
         Repo('.').git.execute(['git', 'config', '--global', '--add', 'safe.directory', '/github/workspace'])
@@ -75,7 +80,7 @@ class CkanMetaTester:
 
         # Escape hatch in case author replaces a download after a previous success
         # (which will save it to the persistent cache)
-        overwrite_cache = ('#overwrite_cache' in pr_body)
+        overwrite_cache = False if pr_body is None else ('#overwrite_cache' in pr_body)
         logging.debug('overwrite_cache: %s', overwrite_cache)
 
         if not self.CACHE_PATH.exists():
@@ -85,7 +90,7 @@ class CkanMetaTester:
         meta_repo = CkanMetaRepo(Repo(Path(diff_meta_root))) if diff_meta_root else None
 
         for file in self.files_to_test(source):
-            if len(pr_body) < 1:
+            if pr_body is not None and len(pr_body) < 1:
                 # Warn for empty PR body on every file so it's noticeable in the files changed tab
                 print(f'::warning file={file}::Pull requests should have a description with a summary of the changes')
             if not self.test_file(file, overwrite_cache, github_token, meta_repo):
@@ -221,6 +226,28 @@ class CkanMetaTester:
                     ['mono', self.CKAN_PATH, 'prompt', '--headless'],
                     input_str=self.CKAN_INSTALL_IDENTIFIERS_TEMPLATE.substitute(
                         identifiers=' '.join(identifiers)))
+
+    @staticmethod
+    def get_pr_body(github_token: Optional[str], pr_url: Optional[str]) -> Optional[str]:
+        # Get PR body text
+        if pr_url:
+            headers = { 'Accept': 'application/vnd.github.v3.raw+json' }
+            parsed_pr_url = urlparse(pr_url)
+            if github_token:
+                if parsed_pr_url.scheme == 'https' and parsed_pr_url.netloc == 'api.github.com' \
+                        and parsed_pr_url.path.startswith('/repos/'):
+                    headers['Authorization'] = f'token {github_token}'
+                else:
+                    logging.warning('Invalid pull request url, omitting Authorization header')
+
+            resp = requests.get(pr_url, headers=headers, timeout=30)
+            if resp.ok:
+                # If the PR has an empty body, 'body' is set to None, not the empty string
+                return resp.json().get('body') or ''
+            logging.warning(resp.text)
+            return ''
+        # Lacking a URL means we're not in a pull request, which is different from the body being empty
+        return None
 
     def pr_body_versions(self, pr_body: Optional[str]) -> List[GameVersion]:
         if not pr_body:
