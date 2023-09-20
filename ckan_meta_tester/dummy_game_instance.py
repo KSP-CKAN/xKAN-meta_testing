@@ -52,6 +52,8 @@ class DummyGameInstance:
         logging.debug('Adding repo %s', self.addl_repo.as_uri())
         run(['mono', self.ckan_exe, 'repo', 'add', 'local', self.addl_repo.as_uri()],
             capture_output=self.capture)
+        run(['mono', self.ckan_exe, 'repo', 'priority', 'local', '0'],
+            capture_output=self.capture)
         if self.SAVED_REGISTRY.exists():
             logging.debug('Restoring saved registry from %s', self.SAVED_REGISTRY)
             copy(self.SAVED_REGISTRY, self.registry_path)
