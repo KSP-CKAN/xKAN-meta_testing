@@ -10,10 +10,7 @@ from .game_version import GameVersion
 
 
 class DummyGameInstance:
-
     SAVED_REGISTRY=Path('/tmp/registry.json')
-    MAKING_HISTORY_VERSION=GameVersion('1.4.1')
-    BREAKING_GROUND_VERSION=GameVersion('1.7.1')
 
     def __init__(self, where: Path, ckan_exe: Path, addl_repo: Path, main_ver: GameVersion, other_versions: List[GameVersion], cache_path: Path, game: Game) -> None:
         self.where = where
@@ -36,7 +33,7 @@ class DummyGameInstance:
              '--game', self.game.short_name,
              '--set-default', '--headless',
              'dummy', self.where, str(self.main_ver),
-             *self._available_dlcs(self.main_ver)],
+             *self.game.dlc_cmdline_flags(self.main_ver)],
             capture_output=self.capture)
         for ver in self.other_versions:
             logging.debug('Setting version %s compatible', ver)
@@ -65,12 +62,6 @@ class DummyGameInstance:
             logging.debug('Saving registry to %s', self.SAVED_REGISTRY)
         logging.debug('Dummy instance is ready')
         return self
-
-    def _available_dlcs(self, ver: GameVersion) -> List[str]:
-        return [
-            *(['--MakingHistory',  '1.1.0'] if ver >= self.MAKING_HISTORY_VERSION  else []),
-            *(['--BreakingGround', '1.0.0'] if ver >= self.BREAKING_GROUND_VERSION else [])
-        ]
 
     def __exit__(self, exc_type: Type[BaseException],
                  exc_value: BaseException, traceback: TracebackType) -> None:
