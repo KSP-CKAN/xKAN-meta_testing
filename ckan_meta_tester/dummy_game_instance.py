@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from shutil import rmtree, copy
+from shutil import rmtree, copy, disk_usage
 from subprocess import run
 from types import TracebackType
 from typing import Type, List
@@ -43,8 +43,13 @@ class DummyGameInstance:
         logging.debug('Setting cache location to %s', self.cache_path.absolute())
         run(['mono', self.ckan_exe, 'cache', 'set', self.cache_path.absolute(), '--headless'],
             capture_output=self.capture)
-        logging.debug('Setting cache limit to %s', 5000)
-        run(['mono', self.ckan_exe, 'cache', 'setlimit', '5000'],
+        # Free space plus existing cache minus 1 GB padding
+        cache_mbytes = max(5000,
+                           (((disk_usage(self.cache_path)[2] if self.cache_path.is_dir() else 0)
+                             + sum(f.stat().st_size for f in self.cache_path.rglob('*'))
+                             ) // 1024 // 1024 - 1024))
+        logging.debug('Setting cache limit to %s', cache_mbytes)
+        run(['mono', self.ckan_exe, 'cache', 'setlimit', str(cache_mbytes)],
             capture_output=self.capture)
         logging.debug('Adding repo %s', self.addl_repo.as_uri())
         run(['mono', self.ckan_exe, 'repo', 'add', 'local', self.addl_repo.as_uri()],
