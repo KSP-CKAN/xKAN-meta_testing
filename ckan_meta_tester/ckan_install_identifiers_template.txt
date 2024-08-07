@@ -1,4 +1,5 @@
 cache setlimit 5000
 install $identifiers --headless
+show --with-versions $identifiers
 list --porcelain
 remove $identifiers --headless
