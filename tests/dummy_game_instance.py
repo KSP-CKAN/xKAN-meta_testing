@@ -2,7 +2,6 @@ from pathlib import Path, PosixPath
 import unittest.util
 from unittest import TestCase
 from unittest.mock import Mock, patch, call
-from tempfile import TemporaryDirectory, TemporaryFile
 
 from ckan_meta_tester.game import Game
 from ckan_meta_tester.game_version import GameVersion
@@ -26,7 +25,7 @@ class TestDummyGameInstance(TestCase):
         mocked_run: Mock) -> None:
 
         # Arrange
-        unittest.util._MAX_LENGTH=999999999 # :snake:
+        unittest.util._MAX_LENGTH=999999999 # type: ignore # pylint: disable=protected-access
 
         # Act
         with DummyGameInstance(
