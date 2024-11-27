@@ -119,7 +119,7 @@ jobs:
 
 ## See also
 
-Validate your KSP-AVC .version files with https://github.com/DasSkelett/AVC-VersionFileValidator !
+Validate your KSP-AVC .version files with <https://github.com/DasSkelett/AVC-VersionFileValidator>!
 
 ## Contributions
 
