@@ -189,6 +189,10 @@ class CkanMetaTester:
         if meta_repo is not None:
             diff = ckan.find_diff(meta_repo)
             if diff is not None:
+                if len(diff) == 0:
+                    print(f'::notice file={orig_file}::Diff empty for {ckan.name} {ckan.version}, skipping install',
+                          flush=True)
+                    return True
                 with LogGroup(f'Diffing {ckan.name} {ckan.version}'):
                     print(diff, end='', flush=True)
         with LogGroup(f'Installing {ckan.name} {ckan.version}'):
