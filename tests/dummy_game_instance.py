@@ -35,7 +35,8 @@ class TestDummyGameInstance(TestCase):
             GameVersion('1.8.1'),
             [GameVersion('1.8.0')],
             Path('/cache'),
-            Game.from_id('KSP')):
+            Game.from_id('KSP'),
+            None):
 
             pass
 
