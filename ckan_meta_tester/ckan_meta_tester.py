@@ -202,9 +202,10 @@ class CkanMetaTester:
                 print(f'::error file={orig_file}::{file} is not compatible with any game versions!', flush=True)
                 return False
 
-            with DummyGameInstance(
-                Path('/game-instance'), self.CKAN_PATH, self.TINY_REPO,
-                versions[-1], versions[:-1], self.CACHE_PATH, self.game):
+            with DummyGameInstance(Path('/game-instance'), self.CKAN_PATH,
+                                   self.TINY_REPO, versions[-1], versions[:-1],
+                                   self.CACHE_PATH, self.game,
+                                   getattr(ckan, 'release_status', None)):
 
                 return self.run_for_file(
                     orig_file,
@@ -223,7 +224,7 @@ class CkanMetaTester:
 
             with DummyGameInstance(
                 Path('/game-instance'), self.CKAN_PATH, self.TINY_REPO,
-                versions[-1], versions[:-1], self.CACHE_PATH, self.game):
+                versions[-1], versions[:-1], self.CACHE_PATH, self.game, None):
 
                 return self.run_for_file(
                     None,
