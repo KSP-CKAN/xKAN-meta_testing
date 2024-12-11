@@ -35,7 +35,8 @@ class TestDummyGameInstance(TestCase):
             GameVersion('1.8.1'),
             [GameVersion('1.8.0')],
             Path('/cache'),
-            Game.from_id('KSP')):
+            Game.from_id('KSP'),
+            None):
 
             pass
 
@@ -57,21 +58,21 @@ class TestDummyGameInstance(TestCase):
                   '--set-default', '--headless', 'dummy',
                   PosixPath('/game-instance'), '1.8.1',
                   '--MakingHistory', '1.1.0', '--BreakingGround', '1.0.0'],
-                 capture_output=True),
+                 capture_output=True, check=False),
             call(['mono', PosixPath('/ckan.exe'), 'compat', 'add', '1.8.0'],
-                 capture_output=True),
+                 capture_output=True, check=False),
             call(['mono', PosixPath('/ckan.exe'), 'cache', 'set', PosixPath('/cache'), '--headless'],
-                 capture_output=True),
+                 capture_output=True, check=False),
             call(['mono', PosixPath('/ckan.exe'), 'cache', 'setlimit', '5000'],
-                 capture_output=True),
+                 capture_output=True, check=False),
             call(['mono', PosixPath('/ckan.exe'), 'repo', 'add',
                   'local', 'file:///repo/metadata.tar.gz'],
-                 capture_output=True),
+                 capture_output=True, check=False),
             call(['mono', PosixPath('/ckan.exe'), 'repo', 'priority',
                   'local', '0'],
-                 capture_output=True),
+                 capture_output=True, check=False),
             call(['mono', PosixPath('/ckan.exe'), 'update'],
-                 capture_output=True),
+                 capture_output=True, check=False),
             call(['mono', PosixPath('/ckan.exe'), 'instance', 'forget', 'dummy'],
-                 capture_output=True)
+                 capture_output=True, check=False)
         ])
