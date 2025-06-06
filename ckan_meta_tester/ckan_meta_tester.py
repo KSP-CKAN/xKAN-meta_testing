@@ -55,8 +55,8 @@ class CkanMetaTester:
         self.game = Game.from_id(game_id)
         cfg = ConfigParser()
         cfg.read('/usr/local/etc/metadata.ini')
-        self.netkan_cmd = cfg['Ckan'].get('Command', 'mono /usr/local/bin/netkan.exe').split()
-        self.ckan_cmd = cfg['Netkan'].get('Command', 'mono /usr/local/bin/ckan.exe').split()
+        self.netkan_cmd = cfg.get('Ckan', 'Command', fallback='mono /usr/local/bin/netkan.exe').split()
+        self.ckan_cmd = cfg.get('Netkan', 'Command', fallback='mono /usr/local/bin/ckan.exe').split()
         makedirs(self.INFLATED_PATH, exist_ok=True)
         makedirs(self.REPO_PATH, exist_ok=True)
 
