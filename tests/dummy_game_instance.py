@@ -53,7 +53,7 @@ class TestDummyGameInstance(TestCase):
             call(PosixPath('/game-instance'))
         ])
         self.assertEqual(mocked_run.mock_calls, [
-            call(['mono', PosixPath('/ckan.exe'), 'instance', 'fake',
+            call(['mono', '/ckan.exe', 'instance', 'fake',
                   '--game', 'KSP',
                   '--set-default', '--headless', 'dummy',
                   PosixPath('/game-instance'), '1.8.1',
