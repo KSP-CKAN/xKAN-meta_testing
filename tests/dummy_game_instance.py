@@ -30,7 +30,7 @@ class TestDummyGameInstance(TestCase):
         # Act
         with DummyGameInstance(
             Path('/game-instance'),
-            Path('/ckan.exe'),
+            ['mono', '/ckan.exe'],
             Path('/repo/metadata.tar.gz'),
             GameVersion('1.8.1'),
             [GameVersion('1.8.0')],
