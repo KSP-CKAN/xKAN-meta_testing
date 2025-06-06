@@ -11,6 +11,7 @@ from collections import OrderedDict
 from tempfile import TemporaryDirectory
 from urllib.parse import urlparse
 
+from configparser import ConfigParser
 from git import Repo, DiffIndex
 from exitstatus import ExitStatus
 import requests
@@ -25,17 +26,12 @@ from .log_group import LogGroup
 
 
 class CkanMetaTester:
-
-    # Location of the netkan.exe and ckan.exe files in the container
-    BIN_PATH    = Path('/usr/local/bin')
-    NETKAN_PATH = BIN_PATH.joinpath('netkan.exe')
-    CKAN_PATH   = BIN_PATH.joinpath('ckan.exe')
     USER_AGENT  = 'Mozilla/5.0 (compatible; Netkanbot/1.0; CKAN; +https://github.com/KSP-CKAN/xKAN-meta_testing)'
 
     INFLATED_PATH = Path('.ckans')
     CACHE_PATH    = Path('.cache')
     REPO_PATH     = Path('.repo').resolve()
-    TINY_REPO     = REPO_PATH.joinpath('metadata.tar.gz')
+    TINY_REPO     = REPO_PATH / 'metadata.tar.gz'
 
     CKAN_INSTALL_TEMPLATE = Template(read_text(
         'ckan_meta_tester', 'ckan_install_template.txt'))
@@ -57,6 +53,10 @@ class CkanMetaTester:
         self.failed = False
         self.i_am_the_bot = i_am_the_bot
         self.game = Game.from_id(game_id)
+        cfg = ConfigParser()
+        cfg.read('/usr/local/etc/metadata.ini')
+        self.netkan_cmd = cfg.get('Ckan', 'Command', fallback='mono /usr/local/bin/netkan.exe').split()
+        self.ckan_cmd = cfg.get('Netkan', 'Command', fallback='mono /usr/local/bin/ckan.exe').split()
         makedirs(self.INFLATED_PATH, exist_ok=True)
         makedirs(self.REPO_PATH, exist_ok=True)
 
@@ -147,7 +147,7 @@ class CkanMetaTester:
                 logging.debug('Inflating into %s', temppath)
                 if not self.run_for_file(
                     file,
-                    ['mono', self.NETKAN_PATH,
+                    [*self.netkan_cmd,
                      '--game', self.game.short_name,
                      *(['--github-token', github_token] if github_token is not None else []),
                      '--cachedir', self.CACHE_PATH,
@@ -162,7 +162,7 @@ class CkanMetaTester:
                     print(ckan.read_text())
                     logging.debug('Copying %s to %s', ckan, self.INFLATED_PATH)
                     copy(ckan, self.INFLATED_PATH)
-                self.source_to_ckans[file] = [self.INFLATED_PATH.joinpath(ckan.name)
+                self.source_to_ckans[file] = [self.INFLATED_PATH / ckan.name
                                               for ckan in ckans]
                 logging.debug('Files generated: %s', self.source_to_ckans[file])
         return True
@@ -171,7 +171,7 @@ class CkanMetaTester:
         with LogGroup(f'Validating {file}'):
             if not self.run_for_file(
                 file,
-                ['mono', self.NETKAN_PATH,
+                [*self.netkan_cmd,
                  '--game', self.game.short_name,
                  *(['--github-token', github_token] if github_token is not None else []),
                  '--cachedir', self.CACHE_PATH,
@@ -180,7 +180,7 @@ class CkanMetaTester:
                  '--validate-ckan', file]):
                 return False
             copy(file, self.INFLATED_PATH)
-            self.source_to_ckans[file] = [self.INFLATED_PATH.joinpath(file.name)]
+            self.source_to_ckans[file] = [self.INFLATED_PATH / file.name]
             return True
 
     def install_ckan(self, file: Path, orig_file: Path, pr_body: Optional[str], meta_repo: Optional[CkanMetaRepo]) -> bool:
@@ -202,14 +202,14 @@ class CkanMetaTester:
                 print(f'::error file={orig_file}::{file} is not compatible with any game versions!', flush=True)
                 return False
 
-            with DummyGameInstance(Path('/game-instance'), self.CKAN_PATH,
+            with DummyGameInstance(Path('/game-instance'), self.ckan_cmd,
                                    self.TINY_REPO, versions[-1], versions[:-1],
                                    self.CACHE_PATH, self.game,
                                    getattr(ckan, 'release_status', None)):
 
                 return self.run_for_file(
                     orig_file,
-                    ['mono', self.CKAN_PATH, 'prompt', '--headless',
+                    [*self.ckan_cmd, 'prompt', '--headless',
                      '--net-useragent', self.USER_AGENT],
                     input_str=self.CKAN_INSTALL_TEMPLATE.substitute(
                         ckanfile=file, identifier=ckan.identifier))
@@ -223,12 +223,12 @@ class CkanMetaTester:
                 return False
 
             with DummyGameInstance(
-                Path('/game-instance'), self.CKAN_PATH, self.TINY_REPO,
+                Path('/game-instance'), self.ckan_cmd, self.TINY_REPO,
                 versions[-1], versions[:-1], self.CACHE_PATH, self.game, None):
 
                 return self.run_for_file(
                     None,
-                    ['mono', self.CKAN_PATH, 'prompt', '--headless'],
+                    [*self.ckan_cmd, 'prompt', '--headless'],
                     input_str=self.CKAN_INSTALL_IDENTIFIERS_TEMPLATE.substitute(
                         identifiers=' '.join(identifiers)))
 

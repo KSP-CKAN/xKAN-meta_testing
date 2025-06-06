@@ -30,7 +30,7 @@ class TestDummyGameInstance(TestCase):
         # Act
         with DummyGameInstance(
             Path('/game-instance'),
-            Path('/ckan.exe'),
+            ['mono', '/ckan.exe'],
             Path('/repo/metadata.tar.gz'),
             GameVersion('1.8.1'),
             [GameVersion('1.8.0')],
@@ -53,26 +53,26 @@ class TestDummyGameInstance(TestCase):
             call(PosixPath('/game-instance'))
         ])
         self.assertEqual(mocked_run.mock_calls, [
-            call(['mono', PosixPath('/ckan.exe'), 'instance', 'fake',
+            call(['mono', '/ckan.exe', 'instance', 'fake',
                   '--game', 'KSP',
                   '--set-default', '--headless', 'dummy',
                   PosixPath('/game-instance'), '1.8.1',
                   '--MakingHistory', '1.1.0', '--BreakingGround', '1.0.0'],
                  capture_output=True, check=False),
-            call(['mono', PosixPath('/ckan.exe'), 'compat', 'add', '1.8.0'],
+            call(['mono', '/ckan.exe', 'compat', 'add', '1.8.0'],
                  capture_output=True, check=False),
-            call(['mono', PosixPath('/ckan.exe'), 'cache', 'set', PosixPath('/cache'), '--headless'],
+            call(['mono', '/ckan.exe', 'cache', 'set', PosixPath('/cache'), '--headless'],
                  capture_output=True, check=False),
-            call(['mono', PosixPath('/ckan.exe'), 'cache', 'setlimit', '5000'],
+            call(['mono', '/ckan.exe', 'cache', 'setlimit', '5000'],
                  capture_output=True, check=False),
-            call(['mono', PosixPath('/ckan.exe'), 'repo', 'add',
+            call(['mono', '/ckan.exe', 'repo', 'add',
                   'local', 'file:///repo/metadata.tar.gz'],
                  capture_output=True, check=False),
-            call(['mono', PosixPath('/ckan.exe'), 'repo', 'priority',
+            call(['mono', '/ckan.exe', 'repo', 'priority',
                   'local', '0'],
                  capture_output=True, check=False),
-            call(['mono', PosixPath('/ckan.exe'), 'update'],
+            call(['mono', '/ckan.exe', 'update'],
                  capture_output=True, check=False),
-            call(['mono', PosixPath('/ckan.exe'), 'instance', 'forget', 'dummy'],
+            call(['mono', '/ckan.exe', 'instance', 'forget', 'dummy'],
                  capture_output=True, check=False)
         ])
